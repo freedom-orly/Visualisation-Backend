@@ -1,13 +1,15 @@
-sales <- read.csv2("sales_sample_head.csv")
+sales <- read.csv2("sales_sample2.csv")
 stores <- read.csv2("store.csv", )
-#View(sales)
 
 #Puts the total_cost colum as numeric instead of characters
-sales$Total_cost <- as.numeric(sales$Total_cost)
+sales$NetAmountExcl <- as.numeric(sales$NetAmountExcl)
 
 #Gets the total costs per store from the whole csv file
 total_cost_per_store <- function(){
-  store_summary <- aggregate(Total_cost ~ Store_id, data = sales, sum, na.rm = TRUE)
+  store_summary <- aggregate(sales$NetAmountExcl ~ StoreId, data = sales, sum, na.rm = TRUE)
+  
+  #Add heading
+  store_summary <- merge(store_summary, stores, by = "StoreId", all.x = TRUE)
   
   #View(store_summary)
   return(store_summary)
@@ -16,12 +18,17 @@ total_cost_per_store <- function(){
 #Gets the total costs per store per day
 #Returns Store id, day of transactions and total transaction amount of store
 total_cost_per_day <- function(){
+  
   # Convert to POSIXct (date-time format)
-  sales$Date <- as.POSIXct(sales$Date, format = "%Y-%m-%d %H:%M:%OS")
+  sales$ReceiptDateTime <- as.POSIXct(sales$ReceiptDateTime, format = "%Y-%m-%d %H:%M:%S")
+
   #Gets the date
-  sales$Date <- as.Date(sales$Date)
+  sales$ReceiptDateTime <- as.Date(sales$ReceiptDateTime)
   #Sums the Total_cost by Store_id and Date
-  daily_store_summary <- aggregate(Total_cost ~ Store_id + Date, data = sales, sum, na.rm = TRUE)
+  daily_store_summary <- aggregate(sales$NetAmountExcl ~ StoreId + ReceiptDateTime, data = sales, sum, na.rm = TRUE)
+  
+  #Add heading
+  daily_store_summary <- merge(daily_store_summary, stores, by = "StoreId", all.x = TRUE)
   
   #View(daily_store_summary)
   return(daily_store_summary)
@@ -31,14 +38,17 @@ total_cost_per_day <- function(){
 #(returns data.frame: Store id, Day, Hour, total_cost)
 total_cost_per_hour <- function(){
   # Convert to POSIXct (date-time format)
-  sales$Date <- as.POSIXct(sales$Date, format = "%Y-%m-%d %H:%M:%OS")
+  sales$ReceiptDateTime <- as.POSIXct(sales$ReceiptDateTime, format = "%Y-%m-%d %H:%M:%S")
   #Gets the day
-  sales$Day <- as.Date(sales$Date)
+  sales$Day <- as.Date(sales$ReceiptDateTime)
   #Gets the hour
-  sales$Hour <- as.integer(format(sales$Date, "%H"))
+  sales$Hour <- as.integer(format(sales$ReceiptDateTime, "%H"))
   
-  hour_summary <- aggregate(Total_cost ~ Store_id + Day + Hour, data = sales, sum, na.rm = TRUE)
-  #View(hour_summary)
+  hour_summary <- aggregate(sales$NetAmountExcl ~ StoreId + Day + Hour, data = sales, sum, na.rm = TRUE)
+  
+  #Add heading
+  hour_summary <- merge(hour_summary, stores, by = "StoreId", all.x = TRUE)
+  
+  View(hour_summary)
   return(hour_summary)
 }
-

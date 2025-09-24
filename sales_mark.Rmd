@@ -1,0 +1,86 @@
+---
+title: "Sales Analysis"
+author: "Freedom orly"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r echo=FALSE}
+sales <- read.csv2("sales_sample_head.csv")
+stores <- read.csv2("store.csv")
+
+library(ggplot2)
+
+# Convert columns to proper data types
+sales$Total_cost <- as.numeric(sales$Total_cost)
+sales$Quantity <- as.integer(as.numeric(sales$Quantity))
+
+```
+
+```{r echo=FALSE}
+total_cost_per_store <- function(){
+  store_summary <- aggregate(Total_cost ~ Store_id, data = sales, sum, na.rm = TRUE)
+  return(store_summary)
+}
+
+store_summary <- total_cost_per_store()
+
+ggplot(store_summary, aes(x = factor(Store_id), y = Total_cost, fill = factor(Store_id))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total sales per Store", x = "Store ID", y = "Total sales") +
+  theme_minimal()
+
+```
+```{r echo=FALSE}
+total_cost_per_day <- function(){
+  # Convert to POSIXct and extract Date
+  sales$Date <- as.POSIXct(sales$Date, format = "%Y-%m-%d %H:%M:%OS")
+  sales$Date <- as.Date(sales$Date)
+  
+  daily_store_summary <- aggregate(Total_cost ~ Store_id + Date, data = sales, sum, na.rm = TRUE)
+  return(daily_store_summary)
+}
+
+daily_summary <- total_cost_per_day()
+
+ggplot(daily_summary, aes(x = Date, y = Total_cost, color = factor(Store_id))) +
+  geom_line() +
+  labs(title = "Daily Total sales per Store", x = "Date", y = "Total sales") +
+  theme_minimal()
+
+```
+```{r echo=FALSE}
+# Function (already defined)
+total_cost_per_hour <- function(){
+  sales$Date <- as.POSIXct(sales$Date, format = "%Y-%m-%d %H:%M:%OS")
+  sales$Day <- as.Date(sales$Date)
+  sales$Hour <- as.integer(format(sales$Date, "%H"))
+  
+  hour_summary <- aggregate(Total_cost ~ Store_id + Day + Hour, 
+                            data = sales, sum, na.rm = TRUE)
+  return(hour_summary)
+}
+
+hour_summary <- total_cost_per_hour()
+
+# Heatmap: Day vs Hour, colored by Total_cost
+library(ggplot2)
+
+ggplot(hour_summary, aes(x = Hour, y = Day, fill = Total_cost)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "darkred") +
+  facet_wrap(~ Store_id) +
+  labs(title = "Heatmap of Hourly Sales per Store",
+       x = "Hour of Day",
+       y = "Date",
+       fill = "Total sales") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+
+

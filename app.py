@@ -10,6 +10,10 @@ REQUIRED_SALES_HEADERS = [
     "Quantity", "Article", "SubgroupId", "MaingroupId", "StoreId"
 ]
 
+REQUIRED_VISITOR_HEADERS = [
+    "AccessGroupId", "Date", "Time", "NumberOfUsedEntrances"
+]
+
 SAMPLE_ROWS = 1000
 MAX_WARN_ROWS_SHOWN = 10
 
@@ -19,16 +23,25 @@ MAX_WARN_ROWS_SHOWN = 10
 def _normalize_header_set(cols):
     return {c.strip().lower() for c in cols}
 
+#-----------------------
+
 @app.route('/')
 def hello_world():
     return 'Hello World'
 
-@app.route("/api/upload/sales", methods=["POST"])
-def upload_sales():
+
+@app.route("/api/upload/data", methods=["POST"])
+#Checks if file headers are valid
+def file_validation():
     file = request.files.get("file")
+    file_name = request.form.get("file_name")
+
     if not file:
         return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
     
+    if not file_name:
+        return jsonify({"status": "rejected", "errors": ["No file name provided in 'file_name' field."]}), 400
+
     #Try read sample from file
     try:
         content = file.read()
@@ -43,12 +56,18 @@ def upload_sales():
     except Exception as e:
         return jsonify({"status": "rejected", "errors": [f"Unable to parse CSV headers: {str(e)}"]}), 400
     
-    #Lowered headers
-    req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
+    #Lowered headers file_name is used to see which file headers to use
+    if file_name == "sales":
+        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
+    elif file_name == "visitors":
+        req_lower = _normalize_header_set(REQUIRED_VISITOR_HEADERS)
+    else:
+        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
+
     rec_lower = _normalize_header_set(received_headers)
 
     #Check if headers are missing
-    missing = [h for h in REQUIRED_SALES_HEADERS if h.strip().lower() not in rec_lower]
+    missing = [h for h in req_lower if h not in rec_lower]
     if missing:
         return jsonify({
             "status": "rejected",
@@ -65,6 +84,7 @@ def upload_sales():
     #Return success marker.
     return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
 
+
 if __name__ == '__main__':
     
-    app.run()
+    app.run(debug=True)

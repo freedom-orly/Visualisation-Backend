@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import pandas as pd
 import io
 
+from controllers import UploadController
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
 
@@ -33,57 +35,7 @@ def hello_world():
 @app.route("/api/upload/data", methods=["POST"])
 #Checks if file headers are valid
 def file_validation():
-    file = request.files.get("file")
-    file_name = request.form.get("file_name")
-
-    if not file:
-        return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
-    
-    if not file_name:
-        return jsonify({"status": "rejected", "errors": ["No file name provided in 'file_name' field."]}), 400
-
-    #Try read sample from file
-    try:
-        content = file.read()
-        sample_buf = io.BytesIO(content)
-    except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Failed to read uploaded file: {str(e)}"]}), 400
-    
-    #Check if we can read the headers
-    try:
-        sample_headers_df = pd.read_csv(io.BytesIO(content), nrows=0, sep=";")
-        received_headers = list(sample_headers_df.columns)
-    except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Unable to parse CSV headers: {str(e)}"]}), 400
-    
-    #Lowered headers file_name is used to see which file headers to use
-    if file_name == "sales":
-        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
-    elif file_name == "visitors":
-        req_lower = _normalize_header_set(REQUIRED_VISITOR_HEADERS)
-    else:
-        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
-
-    rec_lower = _normalize_header_set(received_headers)
-
-    #Check if headers are missing
-    missing = [h for h in req_lower if h not in rec_lower]
-    if missing:
-        return jsonify({
-            "status": "rejected",
-            "errors": [f"Missing required columns: {missing}. Received: {received_headers}"]
-        }), 400
-    
-    #Read a sample of rows for content validation
-    try:
-        sample_df = pd.read_csv(io.BytesIO(content), dtype=str, nrows=SAMPLE_ROWS, sep=";")
-    except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Failed to parse CSV sample rows: {str(e)}"]}), 400
-    
-
-    #Return success marker.
-    return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
-
+    UploadController.upload_file(req=request)
 
 if __name__ == '__main__':
     

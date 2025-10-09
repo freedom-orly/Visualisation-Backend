@@ -25,7 +25,7 @@ def _normalize_header_set(cols):
 
 
 
-def upload_file(self, req):
+def upload_file(request, db):
         file = request.files.get("file")
         file_name = request.form.get("file_name")
 
@@ -76,3 +76,6 @@ def upload_file(self, req):
 
         #Return success marker.
         return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
+    
+def GetLatestUploads():
+    return None

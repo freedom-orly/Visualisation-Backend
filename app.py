@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, json, request, jsonify
 import pandas as pd
 import io
 from flask_sqlalchemy import SQLAlchemy
 from models.db_models import Base, File, DataFile, RScriptFile, Visualization
+from models.dto_models import FileQuery
+from types import SimpleNamespace
 
 from Handlers import UploadHandler
 import os
@@ -44,9 +46,10 @@ def file_validation():
     return UploadHandler.upload_file(request=request, db=db)
 
 
-@app.route("/files", methods=["GET"])
+@app.route("/api/files/search", methods=["POST"], )
 def get_files():
-    return UploadHandler.upload_file(request=request, db=db)
+    query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    return UploadHandler.search_files(query=query, db=db)
 
 
 if __name__ == '__main__':

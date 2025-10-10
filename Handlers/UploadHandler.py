@@ -1,7 +1,10 @@
 import io
 from flask import jsonify
+from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from requests import request
+from models.db_models import File, DataFile
+from models.dto_models import FileQuery
 
 REQUIRED_SALES_HEADERS = [
     "ReceiptDateTime", "ArticleId", "NetAmountExcl",
@@ -77,38 +80,12 @@ def upload_file(request, db):
         #Return success marker.
         return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
     
-def GetLatestUploads():
-    return None
 
 
-#---------Files---------
-def get_file(f):
-        #get file from database
-        #return file.id, name, path, uploaded time
-        pass
 
-
-def files(request, db):
-    query = request.args.get("query", type=str)
-    #If nothing then returns a list of the files
-    if not query:
-        # query files from database
-        # return jsonify([get_file(f) for f in files]), 200
-        pass
-    
-    #Specific file search
-    q_stripped = query.strip()
-    try:
-        q_int = int(q_stripped)
-    except ValueError:
-        q_int = None
-
-    if q_int is not None:
-        #Get file object
-        #if fileObject:
-            #return jsonify(get_file(file_id)), 200
-        #return jsonify({"error": "No file found"}), 404
-        pass
-
-    else:
-        return jsonify({"error": "File id not found"}), 404
+# Search files recorded in database based on criteria in FileQuery
+def search_files(query: FileQuery, db: SQLAlchemy):
+        dbQuery = db.session.query(File)
+        
+        return jsonify([]), 200
+        

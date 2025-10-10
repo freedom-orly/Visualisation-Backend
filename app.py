@@ -1,10 +1,17 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import io
+from flask_sqlalchemy import SQLAlchemy
+from models.db_models import Base, File, DataFile, RScriptFile, Visualization
+
+from Handlers import UploadHandler
 import os
 
+db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db'
+
 
 REQUIRED_SALES_HEADERS = [
     "ReceiptDateTime", "ArticleId", "NetAmountExcl",
@@ -34,6 +41,7 @@ def hello_world():
 @app.route("/api/upload/data", methods=["POST"])
 #Checks if file headers are valid
 def file_validation():
+    return UploadHandler.upload_file(request=request, db=db)
     file = request.files.get("file")
     file_name = request.form.get("file_name")
 
@@ -119,5 +127,4 @@ def files():
 
 
 if __name__ == '__main__':
-    
-    app.run(debug=True)
+    db.init_app(app)

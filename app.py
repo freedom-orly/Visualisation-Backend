@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import io
+import os
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
@@ -83,6 +84,38 @@ def file_validation():
 
     #Return success marker.
     return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
+
+
+@app.route("/files", methods=["GET"])
+def files():
+    def get_file(f):
+        #get file from database
+        #return file.id, name, path, uploaded time
+        pass
+
+    query = request.args.get("query", type=str)
+    #If nothing then returns a list of the files
+    if not query:
+        # query files from database
+        # return jsonify([get_file(f) for f in files]), 200
+        pass
+    
+    #Specific file search
+    q_stripped = query.strip()
+    try:
+        q_int = int(q_stripped)
+    except ValueError:
+        q_int = None
+
+    if q_int is not None:
+        #Get file object
+        #if fileObject:
+            #return jsonify(get_file(file_id)), 200
+        #return jsonify({"error": "No file found"}), 404
+        pass
+
+    else:
+        return jsonify({"error": "File id not found"}), 404
 
 
 if __name__ == '__main__':

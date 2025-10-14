@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 @dataclass
-class Chart:
+class ChartDTO:
     visualization_id: int
     name: str
     timespan: Optional[timedelta]
@@ -20,6 +20,12 @@ class VisualizationDTO:
     description: str
     is_prediction: bool
     last_updates: List[datetime]
+
+@dataclass
+class ChartQuery:
+    id: int
+    timespan: Optional[timedelta]
+    spread: Optional[timedelta]
 
 
 @dataclass

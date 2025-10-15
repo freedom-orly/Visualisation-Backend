@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
+from werkzeug.datastructures import FileStorage
 
 
 @dataclass
@@ -35,15 +36,11 @@ class FileQuery:
     query: str
     timespan: Optional[timedelta]
     extension: str
-
-
+    
 @dataclass
-class FilePage:
-    start: int
-    count: int
-    query: FileQuery
-    files: List['File']
-
+class FileUploadQuery:
+    file: FileStorage
+    visualization_id: int
 
 @dataclass
 class File:
@@ -52,4 +49,13 @@ class File:
     name: str
     file_path: str
     upload_time: str  #ISO time
-    download_url: str = None
+    download_url: str 
+
+@dataclass
+class FilePage:
+    start: int
+    count: int
+    query: FileQuery
+    files: List[File]
+
+

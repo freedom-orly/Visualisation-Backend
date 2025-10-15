@@ -3,7 +3,7 @@ import pandas as pd
 import io
 from flask_sqlalchemy import SQLAlchemy
 from models.db_models import Base, File, DataFile, RScriptFile, Visualization
-from models.dto_models import ChartQuery, FileQuery
+from models.dto_models import ChartQuery, FileQuery, FileUploadQuery
 from types import SimpleNamespace
 
 from Handlers import UploadHandler, VisualizationHandler
@@ -13,27 +13,11 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db'
+app.config['DEBUG'] = True
 
-
-REQUIRED_SALES_HEADERS = [
-    "ReceiptDateTime", "ArticleId", "NetAmountExcl",
-    "Quantity", "Article", "SubgroupId", "MaingroupId", "StoreId"
-]
-
-REQUIRED_VISITOR_HEADERS = [
-    "AccessGroupId", "Date", "Time", "NumberOfUsedEntrances"
-]
-
-SAMPLE_ROWS = 1000
-MAX_WARN_ROWS_SHOWN = 10
-
-#-------Helpers---------
-
-#Return set of lowercased column names for case-insensitive comparison.
-def _normalize_header_set(cols):
-    return {c.strip().lower() for c in cols}
-
-#-----------------------
+db.init_app(app)
+with app.app_context():
+    db.create_all()
 
 @app.route('/')
 def hello_world():
@@ -43,7 +27,18 @@ def hello_world():
 @app.route("/api/upload/data", methods=["POST"])
 #Checks if file headers are valid
 def file_validation():
-    return UploadHandler.upload_file(request=request, db=db)
+    if 'file' not in request.files:
+        return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
+    if 'visualization_id' not in request.form:
+        return jsonify({"status": "rejected", "errors": ["No visualization_id provided in 'visualization_id' field."]}), 400
+    try: 
+        query: FileUploadQuery = FileUploadQuery(
+            file=request.files['file'],
+            visualization_id=int(request.form.get("visualization_id", type=int)) # type: ignore
+        )
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.upload_file(query=query, db=db)
 
 
 @app.route("/api/files/search", methods=["POST"], )
@@ -60,6 +55,3 @@ def get_chart():
     query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
     return  jsonify(VisualizationHandler.get_chart(query=query, db=db))
 
-if __name__ == '__main__':
-    db.init_app(app)
-    app.run(debug=True)

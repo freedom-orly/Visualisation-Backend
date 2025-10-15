@@ -43,3 +43,13 @@ class FilePage:
     count: int
     query: FileQuery
     files: List['File']
+
+
+@dataclass
+class File:
+    visualization_id: int
+    id: int
+    name: str
+    file_path: str
+    upload_time: str  #ISO time
+    download_url: str = None

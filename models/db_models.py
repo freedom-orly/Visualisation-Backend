@@ -13,7 +13,7 @@ class File(Base):
     name = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     upload_time = Column(DateTime, default=datetime.utcnow)
-
+    
     # Relationships
     data_file = relationship('DataFile', back_populates='file', uselist=False)
     r_script_file = relationship('RScriptFile', back_populates='file', uselist=False)

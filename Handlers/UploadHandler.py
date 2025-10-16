@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from requests import request
 from models.db_models import File, DataFile, Visualization
-from models.dto_models import FileQuery, FileUploadQuery
+from models.dto_models import FileQuery, FileUploadQuery, FileDTO
 from pathlib import Path
 from datetime import timedelta
 
@@ -112,20 +112,32 @@ def upload_file(query: FileUploadQuery, db: SQLAlchemy):
 
 # Search files recorded in database based on criteria in FileQuery
 def search_files(query: FileQuery, db: SQLAlchemy):
-        # dbQuery = db.session.query(DataFile).filter(DataFile.name == f'%{query.query}%',
-        #                                              DataFile.visualization_id == query.visualization_id,
-        #                                              DataFile.upload_time == query.upload_time).limit(query.start)
-        
-        # results = dbQuery.all()
+        dbQuery = db.session.query(DataFile).filter(DataFile.visualization_id == query.visualization_id)
 
-        #if no query return all files as list
-        if query is None:
-            return db.session.query(DataFile).all()
-        #if query has id then search for file and return it
-        file_obj = db.session.get(DataFile, query.visualization_id)
-        if not file_obj:
-            return jsonify("error: No file found"), 404
-        
-        return jsonify(file_obj), 200
+        print("QUUERY: ", dbQuery)
+        results = dbQuery.all()
+
+        return [
+        {
+            "id": f.id,
+            "timespan": None, #left out for now, can fix later, must be formated to be json seariable
+            "rows_count": f.rows_count,
+            "extension": f.extension,
+            "visualization_id": f.visualization_id
+        }
+        for f in results
+    ]
 
         
+#Returs a list of all files
+def list_files(db: SQLAlchemy) -> list[FileDTO]:
+    dbQuery = db.session.query(File).all()
+    return [
+        {
+            "id": f.id,
+            "name": f.name,
+            "file_path": f.file_path,
+            "upload_time":f.upload_time
+        }
+        for f in dbQuery
+    ]

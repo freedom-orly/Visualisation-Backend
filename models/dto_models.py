@@ -43,7 +43,7 @@ class FileUploadQuery:
     visualization_id: int
 
 @dataclass
-class File:
+class FileDTO:
     visualization_id: int
     id: int
     name: str
@@ -56,6 +56,6 @@ class FilePage:
     start: int
     count: int
     query: FileQuery
-    files: List[File]
+    files: List[FileDTO]
 
 

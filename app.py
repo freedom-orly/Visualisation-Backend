@@ -41,10 +41,14 @@ def file_validation():
     return UploadHandler.upload_file(query=query, db=db)
 
 
-@app.route("/api/files/search", methods=["POST"], )
+@app.route("/api/files/search", methods=["POST"])
 def get_files():
     query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
     return UploadHandler.search_files(query=query, db=db)
+
+@app.route("/api/files/list", methods=["GET"])
+def list_files():
+    return jsonify(UploadHandler.list_files(db=db))
 
 @app.route("/api/visualizations", methods=["GET"])
 def get_visualizations():
@@ -55,3 +59,7 @@ def get_chart():
     query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
     return  jsonify(VisualizationHandler.get_chart(query=query, db=db))
 
+
+if __name__ == '__main__':
+    #db.init_app(app)
+    app.run(debug=True)

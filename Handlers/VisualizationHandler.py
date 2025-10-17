@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
+import subprocess
 from typing import List
 
 from flask_sqlalchemy import SQLAlchemy
 from models.dto_models import ChartDTO, ChartQuery, VisualizationDTO
-from models.db_models import Visualization
+from models.db_models import Visualization, RScriptFile
 
 """Gets chart data for a given chart query.
 
@@ -29,8 +30,30 @@ def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
     
 
 
-def run_rscript(visualization_id: int, timespan: timedelta, spread: timedelta, db: SQLAlchemy) -> bool:
-    raise NotImplementedError
+def run_rscript(visualization_id: int, timespan: timedelta, spread: timedelta, db: SQLAlchemy) -> ChartDTO | None:
+    vis = db.session.get(Visualization, visualization_id, options=[
+        db.joinedload(Visualization.r_script_files)
+    ])
+    if not vis:
+        return None
+    rscript: RScriptFile = vis.r_script_files[0] if vis.r_script_files else None # type: ignore
+    if not rscript:
+        return None
+    out = subprocess.run(['Rscript', rscript.file.file_path, str(timespan), str(spread)], capture_output=True, check=True)
+    if out.returncode != 0:
+        return None
+    output = out.stdout.decode('utf-8')
+    # Parse the output to create ChartDTO
+    dto = ChartDTO(
+        visualization_id=visualization_id,
+        name=vis.name, # type: ignore
+        prediction=vis.prediction, # type: ignore
+        spread=spread,
+        timespan=timespan,
+        values=[]  # Parse output to fill values
+    )
+    return dto
+    
 
 def get_last_updates(v: int, db: SQLAlchemy) -> List[datetime]:
     raise NotImplementedError

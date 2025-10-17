@@ -17,26 +17,24 @@ ChartDTO object containing the chart data
 def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
     # Implementation of the function to fetch and return visualization data
     #Gets the Visualization from query id
-    visual = db.session.get(Visualization, query.id)
-    #ID check
-    if not visual:
-        return None
-    
-    if query.spread:
-        return None
-    
-    if query.timespan:
-        return None 
-    
-
-
-def run_rscript(visualization_id: int, timespan: timedelta, spread: timedelta, db: SQLAlchemy) -> ChartDTO | None:
-    vis = db.session.get(Visualization, visualization_id, options=[
-        db.joinedload(Visualization.r_script_files)
+    visual = db.session.get(Visualization, query.id, options=[
+        db.joinedload(Visualization.r_script_files).joinedload(RScriptFile.file)
     ])
-    if not vis:
+    #ID check
+    if not visual or not visual.r_script_files:
         return None
-    rscript: RScriptFile = vis.r_script_files[0] if vis.r_script_files else None # type: ignore
+    
+    if not query.spread:
+        return None
+    
+    if not query.timespan:
+        return None 
+    return run_rscript(visualization=visual, timespan=query.timespan, spread=query.spread)
+    
+
+
+def run_rscript(visualization: Visualization, timespan: timedelta, spread: timedelta) -> ChartDTO | None:
+    rscript: RScriptFile = visualization.r_script_files[0] if visualization.r_script_files else None # type: ignore
     if not rscript:
         return None
     out = subprocess.run(['Rscript', rscript.file.file_path, str(timespan), str(spread)], capture_output=True, check=True)
@@ -45,9 +43,9 @@ def run_rscript(visualization_id: int, timespan: timedelta, spread: timedelta, d
     output = out.stdout.decode('utf-8')
     # Parse the output to create ChartDTO
     dto = ChartDTO(
-        visualization_id=visualization_id,
-        name=vis.name, # type: ignore
-        prediction=vis.prediction, # type: ignore
+        visualization_id=visualization.id, # type: ignore
+        name=visualization.name, # type: ignore
+        prediction=visualization.prediction, # type: ignore
         spread=spread,
         timespan=timespan,
         values=[]  # Parse output to fill values

@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from models.db_models import Base, File, DataFile, RScriptFile, Visualization
 from models.dto_models import ChartQuery, FileQuery, FileUploadQuery
 from types import SimpleNamespace
+from db_models_init import db_models_init
 
 from Handlers import UploadHandler, VisualizationHandler
 import os
@@ -18,6 +19,7 @@ app.config['DEBUG'] = True
 db.init_app(app)
 with app.app_context():
     db.create_all()
+    db_models_init(db)
 
 @app.route('/')
 def hello_world():
@@ -38,7 +40,22 @@ def file_validation():
         )
     except Exception as e:
         return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
-    return UploadHandler.upload_file(query=query, db=db)
+    return UploadHandler.upload_data_file(query=query, db=db)
+
+@app.route("/api/upload/rscript", methods=["POST"]) # type: ignore
+def upload_rscript():
+    if 'file' not in request.files:
+        return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
+    if 'visualization_id' not in request.form:
+        return jsonify({"status": "rejected", "errors": ["No visualization_id provided in 'visualization_id' field."]}), 400
+    try: 
+        query: FileUploadQuery = FileUploadQuery(
+            file=request.files['file'],
+            visualization_id=int(request.form.get("visualization_id", type=int)) # type: ignore
+        )
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.upload_r_script_file(query=query, db=db)
 
 
 @app.route("/api/files/search", methods=["POST"])

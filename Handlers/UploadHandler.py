@@ -1,9 +1,9 @@
 import io
-from flask import jsonify, url_for
+from flask import Response, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from requests import request
-from models.db_models import File, DataFile, Visualization
+from models.db_models import File, DataFile, RScriptFile, Visualization
 from models.dto_models import FileQuery, FileUploadQuery, FileDTO
 from pathlib import Path
 from datetime import timedelta
@@ -35,7 +35,7 @@ def _normalize_header_set(cols):
 
 
 
-def upload_file(query: FileUploadQuery, db: SQLAlchemy):
+def upload_data_file(query: FileUploadQuery, db: SQLAlchemy):
         
         file = query.file
         
@@ -108,11 +108,41 @@ def upload_file(query: FileUploadQuery, db: SQLAlchemy):
         return jsonify({"status": "ok", "message": "File added successfully"}), 200
     
 
-
+def upload_r_script_file(query: FileUploadQuery, db: SQLAlchemy):
+    file = query.file
+    vis = db.session.get(Visualization, query.visualization_id)
+    if not vis:
+        return jsonify({"status": "rejected", "errors": [f"Visualization not found"]}), 404
+    
+    try:
+        content = file.read()
+        sample_buf = io.BytesIO(content)
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Failed to read uploaded file: {str(e)}"]}), 400
+    
+    # Save the R script file to diskapp.run(debug=True)
+    try:
+        Path(f"./instance/store/{query.visualization_id}/rscripts").mkdir(parents=True, exist_ok=True)
+        file_path = f"./instance/store/{query.visualization_id}/rscripts/{file.filename}"
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        new_r_script_file = RScriptFile(
+            name=file.filename, # type: ignore
+            file_path=file_path,
+            visualization_id=query.visualization_id,
+        )
+        
+        db.session.add(new_r_script_file)
+        db.session.commit()
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Failed to save R script file: {str(e)}"]}), 500
+    
+    return jsonify({"status": "ok", "message": "R script file added successfully"}), 200
 
 # Search files recorded in database based on criteria in FileQuery
 def search_files(query: FileQuery, db: SQLAlchemy):
-        dbQuery = db.session.query(DataFile).filter(DataFile.visualization_id == query.visualization_id)
+        dbQuery = db.session.query(DataFile).filter(DataFile.visualization_id == query.visualization_id) # type: ignore
 
         print("QUUERY: ", dbQuery)
         results = dbQuery.all()
@@ -133,11 +163,11 @@ def search_files(query: FileQuery, db: SQLAlchemy):
 def list_files(db: SQLAlchemy) -> list[FileDTO]:
     dbQuery = db.session.query(File).all()
     return [
-        {
-            "id": f.id,
-            "name": f.name,
-            "file_path": f.file_path,
-            "upload_time":f.upload_time
-        }
+        FileDTO(
+            id=f.id,
+            name=f.name,
+            file_path=f.file_path,
+            upload_time=f.upload_time
+        ) # type: ignore
         for f in dbQuery
     ]

@@ -72,3 +72,8 @@ class RScriptFile(File):
     # Relationships
     visualization = relationship('Visualization', back_populates='r_script_files')
     file = relationship('File', back_populates='r_script_file')
+    
+    def __init__(self, name: str, file_path: str, visualization_id: int):
+        super().__init__(name, file_path)
+        self.visualization_id = visualization_id
+        

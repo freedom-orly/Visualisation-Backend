@@ -162,7 +162,74 @@ average_per_day_loc <- all_sales %>%
 
 
 # ==========================================================
-# 📈 8. Visualizations
+# 🔮 8. Forecasting Function
+# ==========================================================
+
+library(forecast)
+
+# ---- Forecasting Function ----
+forecast_sales <- function(data, date_col = "Date", value_col = "total",
+                           location_col = NULL, h = 14, plot_result = TRUE) {
+  # Validate columns
+  if (!all(c(date_col, value_col) %in% names(data))) {
+    stop("Data must include date and value columns.")
+  }
+  
+  # Convert date and aggregate if needed
+  data[[date_col]] <- as.Date(data[[date_col]])
+  
+  # Optionally filter/forecast per location
+  if (!is.null(location_col) && location_col %in% names(data)) {
+    locations <- unique(data[[location_col]])
+    results <- list()
+    
+    for (loc in locations) {
+      subset_data <- data[data[[location_col]] == loc, ]
+      ts_data <- ts(subset_data[[value_col]], frequency = 7) # weekly pattern
+      
+      fit <- auto.arima(ts_data)
+      fc <- forecast(fit, h = h)
+      
+      results[[as.character(loc)]] <- list(
+        model = fit,
+        forecast = fc
+      )
+      
+      if (plot_result) {
+        autoplot(fc) +
+          ggtitle(paste("Forecast for Location", loc)) +
+          xlab("Time") + ylab(value_col)
+      }
+    }
+    return(results)
+    
+  } else {
+    # Single series forecast
+    ts_data <- ts(data[[value_col]], frequency = 7)
+    fit <- auto.arima(ts_data)
+    fc <- forecast(fit, h = h)
+    
+    if (plot_result) {
+      autoplot(fc) +
+        ggtitle("Sales Forecast") +
+        xlab("Time") + ylab(value_col)
+    }
+    return(list(model = fit, forecast = fc))
+  }
+}
+
+# Example: forecast next 30 days per location
+forecast_results_loc <- forecast_sales(
+  data = total_per_day_loc,
+  date_col = "Date",
+  value_col = "total",
+  location_col = "locationid",
+  h = 30,
+  plot_result = TRUE
+)
+
+# ==========================================================
+# 📈 9. Visualizations
 # ==========================================================
 
 ## ---- Bar: Real Sales ----
@@ -209,7 +276,7 @@ ggplot(heatmap_data, aes(x = hour, y = Date, fill = count)) +
 
 
 # ==========================================================
-# 🧾 9. Optional JSON Output
+# 🧾 10. Optional JSON Output
 # ==========================================================
 # all_data <- list(
 #   total_per_location = total_per_location,

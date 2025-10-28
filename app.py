@@ -60,10 +60,15 @@ def upload_rscript():
     return UploadHandler.upload_r_script_file(query=query, db=db)
 
 
-@app.route("/api/files/search", methods=["POST"])
+@app.route("/api/data/search", methods=["POST"])
 def get_files():
     query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
-    return UploadHandler.search_files(query=query, db=db)
+    return UploadHandler.search_data_files(query=query, db=db)
+
+@app.route("/api/rscripts/search", methods=["POST"])
+def get_rscript_files():
+    query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    return UploadHandler.search_rscript_files(query=query, db=db)
 
 @app.route("/api/files", methods=["GET"])
 def list_files():

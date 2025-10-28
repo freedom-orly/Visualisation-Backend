@@ -141,8 +141,26 @@ def upload_r_script_file(query: FileUploadQuery, db: SQLAlchemy):
     return jsonify({"status": "ok", "message": "R script file added successfully"}), 200
 
 # Search files recorded in database based on criteria in FileQuery
-def search_files(query: FileQuery, db: SQLAlchemy):
+def search_data_files(query: FileQuery, db: SQLAlchemy):
         dbQuery = db.session.query(DataFile).filter(DataFile.visualization_id == query.visualization_id) # type: ignore
+
+        print("QUUERY: ", dbQuery)
+        results = dbQuery.all()
+
+        return [
+        FileDTO(
+            id=f.id, # type: ignore
+            name=f.name, # type: ignore
+            file_path=f.file_path, # type: ignore
+            upload_time=f.upload_time, # type: ignore
+            download_url=url_for('static', filename=f.file_path, _external=True),
+            visualization_id=f.visualization_id # type: ignore
+        ) # type: ignore
+        for f in results
+    ]
+        
+def search_rscript_files(query: FileQuery, db: SQLAlchemy):
+        dbQuery = db.session.query(RScriptFile).filter(RScriptFile.visualization_id == query.visualization_id) # type: ignore
 
         print("QUUERY: ", dbQuery)
         results = dbQuery.all()

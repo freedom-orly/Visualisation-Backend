@@ -12,7 +12,11 @@ class ChartDTO:
     prediction: bool
     values: List[List[int]]
     spread: Optional[timedelta]
-
+@dataclass
+class FileUpdate:
+    id: int
+    name: str
+    time: datetime  
 
 @dataclass
 class VisualizationDTO:
@@ -20,7 +24,7 @@ class VisualizationDTO:
     name: str
     description: str
     is_prediction: bool
-    last_updates: List[datetime]
+    last_updates: List[FileUpdate]
 
 @dataclass
 class ChartQuery:
@@ -57,5 +61,6 @@ class FilePage:
     count: int
     query: FileQuery
     files: List[FileDTO]
+
 
 

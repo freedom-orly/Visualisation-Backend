@@ -3,7 +3,7 @@ import subprocess
 from typing import List
 
 from flask_sqlalchemy import SQLAlchemy
-from models.dto_models import ChartDTO, ChartQuery, VisualizationDTO
+from models.dto_models import ChartDTO, ChartQuery, FileUpdate, VisualizationDTO
 from models.db_models import Visualization, RScriptFile
 
 """Gets chart data for a given chart query.
@@ -53,8 +53,24 @@ def run_rscript(visualization: Visualization, timespan: timedelta, spread: timed
     return dto
     
 
-def get_last_updates(v: int, db: SQLAlchemy) -> List[datetime]:
-    raise NotImplementedError
+def get_last_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
+    return [
+        FileUpdate(
+            id=1,
+            name="example.txt",
+            time=datetime.now()
+        ),
+        FileUpdate(
+            id=2,
+            name="example.txt",
+            time=datetime.now()
+        ),
+        FileUpdate(
+            id=3,
+            name="example.txt",
+            time=datetime.now()
+        )
+    ]
 
 
 def get_visualizations(db: SQLAlchemy) -> List[VisualizationDTO]:
@@ -62,7 +78,7 @@ def get_visualizations(db: SQLAlchemy) -> List[VisualizationDTO]:
     query_results: List[Visualization] = dbQuery.all()
     results: List[VisualizationDTO] = []
     for v in query_results:
-        last_updates: List[datetime] = get_last_updates(v.id, db) # type: ignore
+        last_updates: List[FileUpdate] = get_last_updates(v.id, db) # type: ignore
         vis_dto = VisualizationDTO(
             id=v.id, # type: ignore
             name=v.name, # type: ignore
@@ -72,3 +88,17 @@ def get_visualizations(db: SQLAlchemy) -> List[VisualizationDTO]:
         )
         results.append(vis_dto)
     return results
+
+def get_visualization(db: SQLAlchemy, id: int) -> VisualizationDTO | None:
+    v: Visualization = db.session.get(Visualization, id)
+    if not v:
+        return None
+    last_updates: List[FileUpdate] = get_last_updates(v.id, db) # type: ignore
+    vis_dto = VisualizationDTO(
+        id=v.id, # type: ignore
+        name=v.name, # type: ignore
+        description=v.description, # type: ignore
+        is_prediction=v.prediction, # type: ignore
+        last_updates=last_updates
+    )
+    return vis_dto

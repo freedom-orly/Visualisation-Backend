@@ -148,13 +148,14 @@ def search_files(query: FileQuery, db: SQLAlchemy):
         results = dbQuery.all()
 
         return [
-        {
-            "id": f.id,
-            "timespan": None, #left out for now, can fix later, must be formated to be json seariable
-            "rows_count": f.rows_count,
-            "extension": f.extension,
-            "visualization_id": f.visualization_id
-        }
+        FileDTO(
+            id=f.id, # type: ignore
+            name=f.name, # type: ignore
+            file_path=f.file_path, # type: ignore
+            upload_time=f.upload_time, # type: ignore
+            download_url=url_for('static', filename=f.file_path, _external=True),
+            visualization_id=f.visualization_id # type: ignore
+        ) # type: ignore
         for f in results
     ]
 

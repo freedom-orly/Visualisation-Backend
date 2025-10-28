@@ -6,6 +6,7 @@ from models.db_models import Base, File, DataFile, RScriptFile, Visualization
 from models.dto_models import ChartQuery, FileQuery, FileUploadQuery
 from types import SimpleNamespace
 from db_models_init import db_models_init
+from flask_cors import CORS
 
 from Handlers import UploadHandler, VisualizationHandler
 import os
@@ -15,6 +16,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db'
 app.config['DEBUG'] = True
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 db.init_app(app)
 with app.app_context():
@@ -63,13 +65,17 @@ def get_files():
     query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
     return UploadHandler.search_files(query=query, db=db)
 
-@app.route("/api/files/list", methods=["GET"])
+@app.route("/api/files", methods=["GET"])
 def list_files():
     return jsonify(UploadHandler.list_files(db=db))
 
 @app.route("/api/visualizations", methods=["GET"])
 def get_visualizations():
     return jsonify(VisualizationHandler.get_visualizations(db=db))
+
+@app.route("/api/visualization/<id>", methods=["GET"])
+def get_visualization_byId(id: int):
+    return jsonify(VisualizationHandler.get_visualization(db=db, id=id)) # type: ignore
 
 @app.route("/api/visualizations/chart", methods=["POST"])
 def get_chart():

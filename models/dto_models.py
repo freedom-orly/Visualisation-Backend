@@ -8,10 +8,11 @@ from werkzeug.datastructures import FileStorage
 class ChartDTO:
     visualization_id: int
     name: str
-    timespan: Optional[timedelta]
+    start_date: datetime
+    end_date: datetime
     prediction: bool
     values: List[List[int]]
-    spread: Optional[timedelta]
+    spread: int
 @dataclass
 class FileUpdate:
     id: int
@@ -29,8 +30,9 @@ class VisualizationDTO:
 @dataclass
 class ChartQuery:
     id: int
-    timespan: Optional[timedelta]
-    spread: Optional[timedelta]
+    start_date: datetime
+    end_date: datetime
+    spread: int
 
 
 @dataclass

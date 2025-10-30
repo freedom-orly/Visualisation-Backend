@@ -25,7 +25,6 @@ class VisualizationDTO:
     name: str
     description: str
     is_prediction: bool
-    last_updates: List[FileUpdate]
 
 @dataclass
 class ChartQuery:

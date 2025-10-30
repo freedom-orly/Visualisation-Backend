@@ -4,7 +4,7 @@ from typing import List
 
 from flask_sqlalchemy import SQLAlchemy
 from models.dto_models import ChartDTO, ChartQuery, FileUpdate, VisualizationDTO
-from models.db_models import Visualization, RScriptFile
+from models.db_models import DataFile, Visualization, RScriptFile
 
 """Gets chart data for a given chart query.
 
@@ -34,7 +34,7 @@ def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
 
 
 def run_rscript(visualization: Visualization, start_date: datetime, end_date: datetime, spread: int) -> ChartDTO | None:
-    rscript: RScriptFile = visualization.r_script_files[0] if visualization.r_script_files else None # type: ignore
+    rscript: RScriptFile = visualization.r_script_files[-1] if visualization.r_script_files else None # type: ignore
     if not rscript:
         return None
     output = ""
@@ -129,23 +129,32 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
     return dto
     
 
-def get_last_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
+def get_last_data_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
+    one_month_ago = datetime.now() - timedelta(days=30)
+    files = db.session.query(DataFile).filter(
+        DataFile.visualization_id == v, # type: ignore
+        DataFile.upload_time >= one_month_ago # type: ignore
+    ).all()
     return [
         FileUpdate(
-            id=1,
-            name="example.txt",
-            time=datetime.now()
-        ),
+            file_id=f.id, # type: ignore
+            file_name=f.name, # type: ignore
+            upload_time=f.upload_time # type: ignore
+        ) for f in files
+    ]
+    
+def get_last_rscripts_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
+    one_month_ago = datetime.now() - timedelta(days=30)
+    files = db.session.query(RScriptFile).filter(
+        RScriptFile.visualization_id == v, # type: ignore
+        RScriptFile.upload_time >= one_month_ago # type: ignore
+    ).all()
+    return [
         FileUpdate(
-            id=2,
-            name="example.txt",
-            time=datetime.now()
-        ),
-        FileUpdate(
-            id=3,
-            name="example.txt",
-            time=datetime.now()
-        )
+            file_id=f.id, # type: ignore
+            file_name=f.name, # type: ignore
+            upload_time=f.upload_time # type: ignore
+        ) for f in files
     ]
 
 
@@ -154,13 +163,11 @@ def get_visualizations(db: SQLAlchemy) -> List[VisualizationDTO]:
     query_results: List[Visualization] = dbQuery.all()
     results: List[VisualizationDTO] = []
     for v in query_results:
-        last_updates: List[FileUpdate] = get_last_updates(v.id, db) # type: ignore
         vis_dto = VisualizationDTO(
             id=v.id, # type: ignore
             name=v.name, # type: ignore
             description=v.description, # type: ignore
             is_prediction=v.prediction, # type: ignore
-            last_updates=last_updates
         )
         results.append(vis_dto)
     return results
@@ -169,12 +176,10 @@ def get_visualization(db: SQLAlchemy, id: int) -> VisualizationDTO | None:
     v: Visualization = db.session.get(Visualization, id)
     if not v:
         return None
-    last_updates: List[FileUpdate] = get_last_updates(v.id, db) # type: ignore
     vis_dto = VisualizationDTO(
         id=v.id, # type: ignore
         name=v.name, # type: ignore
         description=v.description, # type: ignore
         is_prediction=v.prediction, # type: ignore
-        last_updates=last_updates
     )
     return vis_dto

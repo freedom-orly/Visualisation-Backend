@@ -62,13 +62,27 @@ def upload_rscript():
 
 @app.route("/api/data/search", methods=["POST"])
 def get_files():
-    query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    try:
+        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
     return UploadHandler.search_data_files(query=query, db=db)
 
 @app.route("/api/rscripts/search", methods=["POST"])
 def get_rscript_files():
-    query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    try:
+        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
     return UploadHandler.search_rscript_files(query=query, db=db)
+
+@app.route("/api/rscripts/<visualization_id>", methods=["GET"])
+def get_last_rscript_by_visualization(visualization_id: int):
+    return jsonify(VisualizationHandler.get_last_rscripts_updates(v=visualization_id, db=db))
+
+@app.route("/api/data/<visualization_id>", methods=["GET"])
+def get_last_data_by_visualization(visualization_id: int):
+    return jsonify(VisualizationHandler.get_last_data_updates(v=visualization_id, db=db))
 
 @app.route("/api/files", methods=["GET"])
 def list_files():
@@ -78,13 +92,17 @@ def list_files():
 def get_visualizations():
     return jsonify(VisualizationHandler.get_visualizations(db=db))
 
+
 @app.route("/api/visualization/<id>", methods=["GET"])
 def get_visualization_byId(id: int):
     return jsonify(VisualizationHandler.get_visualization(db=db, id=id)) # type: ignore
 
 @app.route("/api/visualizations/chart", methods=["POST"])
 def get_chart():
-    query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
+    try:
+        query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
     return  jsonify(VisualizationHandler.get_chart(query=query, db=db))
 
 

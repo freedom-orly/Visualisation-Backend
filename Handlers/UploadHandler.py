@@ -51,31 +51,31 @@ def upload_data_file(query: FileUploadQuery, db: SQLAlchemy):
             return jsonify({"status": "rejected", "errors": [f"Failed to read uploaded file: {str(e)}"]}), 400
         
         # Check if we can read the headers
-        try:
-            sample_headers_df = pd.read_csv(io.BytesIO(content), nrows=0, sep=";")
-            received_headers = list(sample_headers_df.columns)
-        except Exception as e:
-            return jsonify({"status": "rejected", "errors": [f"Unable to parse CSV headers: {str(e)}"]}), 400
+        # try:
+        #     sample_headers_df = pd.read_csv(io.BytesIO(content), nrows=0, sep=";")
+        #     received_headers = list(sample_headers_df.columns)
+        # except Exception as e:
+        #     return jsonify({"status": "rejected", "errors": [f"Unable to parse CSV headers: {str(e)}"]}), 400
         
-        #Lowered headers file_name is used to see which file headers to use
+        # #Lowered headers file_name is used to see which file headers to use
         
-        # Check if headers are missing
-        # TODO: TEMPORARY
-        required_headers = HEADERS_TO_ID.get(query.visualization_id)
-        if not required_headers:
-            return jsonify({"status": "rejected", "errors": [f"Unknown visualization ID: {query.visualization_id}"]}), 400
+        # # Check if headers are missing
+        # # TODO: TEMPORARY
+        # required_headers = HEADERS_TO_ID.get(query.visualization_id)
+        # if not required_headers:
+        #     return jsonify({"status": "rejected", "errors": [f"Unknown visualization ID: {query.visualization_id}"]}), 400
         
-        if not required_headers == received_headers:
-            missing = [h for h in required_headers if h not in received_headers]
-            extra = [h for h in received_headers if h.strip().lower() not in required_headers]
-            errors = []
-            if missing:
-                errors.append(f"Missing required columns: {', '.join(missing)}")
-            if extra:
-                errors.append(f"Unexpected columns: {', '.join(extra[:MAX_WARN_ROWS_SHOWN])}" + (f", and {len(extra) - MAX_WARN_ROWS_SHOWN} more." if len(extra) > MAX_WARN_ROWS_SHOWN else ""))
-            return jsonify({"status": "rejected", "errors": errors}), 400
+        # if not required_headers == received_headers:
+        #     missing = [h for h in required_headers if h not in received_headers]
+        #     extra = [h for h in received_headers if h.strip().lower() not in required_headers]
+        #     errors = []
+        #     if missing:
+        #         errors.append(f"Missing required columns: {', '.join(missing)}")
+        #     if extra:
+        #         errors.append(f"Unexpected columns: {', '.join(extra[:MAX_WARN_ROWS_SHOWN])}" + (f", and {len(extra) - MAX_WARN_ROWS_SHOWN} more." if len(extra) > MAX_WARN_ROWS_SHOWN else ""))
+        #     return jsonify({"status": "rejected", "errors": errors}), 400
         
-        # Read a sample of rows for content validation
+        # # Read a sample of rows for content validation
         try:
             sample_df = pd.read_csv(io.BytesIO(content), dtype=str, nrows=SAMPLE_ROWS, sep=";")
         except Exception as e:

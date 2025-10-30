@@ -44,6 +44,9 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
             return None
         output = out.stdout.decode('utf-8')
     except Exception as e:
+        # Handle errors in R script execution
+            print(f"Error executing R script: {e}")
+    
             dto = ChartDTO(
         visualization_id=visualization.id, # type: ignore
         name=visualization.name, # type: ignore
@@ -127,7 +130,12 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
     [30, 48]]  # Parse output to fill values
     )
     return dto
-    
+
+def get_visualization_max_timespan(id: int, db: SQLAlchemy):
+    visual = db.session.get(Visualization, id, options=[
+        db.joinedload(Visualization.r_script_files).joinedload(RScriptFile.file)
+    ])
+    # TODO
 
 def get_last_data_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
     one_month_ago = datetime.now() - timedelta(days=30)

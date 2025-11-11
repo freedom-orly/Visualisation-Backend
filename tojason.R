@@ -87,6 +87,7 @@ data <- read_file_by_id(1)
 
 historical_data <- list(
   sales_location_hourly = data$sales_location_hourly,
-  total_hourly_visitors = data$total_hourly_visitors
+  total_hourly_visitors = data$total_hourly_visitors,
+  sales_stores_loc = data$sales_stores_loc
 )
  cat(toJSON(historical_data, pretty = TRUE))

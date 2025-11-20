@@ -19,6 +19,11 @@ def db_models_init(db: SQLAlchemy):
             description="asdasdasdasdsadasdasdsadasdasdasdasdasdasdasdasdsad",
             prediction=False
         ),
+        Visualization(
+            name="Sales Forecasting",
+            description="Forecasting future sales based on historical data",
+            prediction=True
+        )
     ]
 
     db.session.add_all(visualizations)

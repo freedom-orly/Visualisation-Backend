@@ -77,9 +77,17 @@ def upload_data_file(query: FileUploadQuery, db: SQLAlchemy):
         
         # # Read a sample of rows for content validation
         try:
-            sample_df = pd.read_csv(io.BytesIO(content), dtype=str, nrows=SAMPLE_ROWS, sep=";")
+            file_type = Path(file.filename).suffix.lower() # type: ignore
+            if file_type == ".csv":
+                sample_df = pd.read_csv(sample_buf, nrows=SAMPLE_ROWS, sep=";")
+            elif file_type in [".xls", ".xlsx"]:
+                sample_df = pd.read_excel(sample_buf, nrows=SAMPLE_ROWS)
+            elif file_type in [".rds", ".rda"]: # we have to accept these but we won't parse them here
+                sample_df = []
+            else:
+                return jsonify({"status": "rejected", "errors": [f"Unsupported file type: {file_type}"]}), 400
         except Exception as e:
-            return jsonify({"status": "rejected", "errors": [f"Failed to parse CSV sample rows: {str(e)}"]}), 400
+            return jsonify({"status": "rejected", "errors": [f"Failed to parse sample rows: {str(e)}"]}), 400
         
         
         # If we got here, everything is fine. Save the file to disk.

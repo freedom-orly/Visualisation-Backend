@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, json, request, jsonify
 import pandas as pd
 import io
@@ -101,6 +102,8 @@ def get_visualization_byId(id: int):
 def get_chart():
     try:
         query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
+        query.start_date = datetime.strptime(query.start_date, "%d.%m.%Y") # type: ignore
+        query.end_date = datetime.strptime(query.end_date, "%d.%m.%Y") # type: ignore
     except Exception as e:
         return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
     return  jsonify(VisualizationHandler.get_chart(query=query, db=db))

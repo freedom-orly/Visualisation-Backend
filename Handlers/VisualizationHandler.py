@@ -29,6 +29,7 @@ def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
     
     if not query.start_date or not query.end_date:
         return None 
+    
     return run_rscript(visualization=visual,start_date=query.start_date,end_date=query.end_date, spread=query.spread)
     
 
@@ -39,7 +40,7 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
         return None
     output = ""
     try:
-        out = subprocess.run(['Rscript', rscript.file.file_path, str(start_date),str(end_date), str(spread)], capture_output=True, check=True)
+        out = subprocess.run(['Rscript', rscript.file.file_path, start_date.strftime("%d/%m/%Y"),end_date.strftime("%d/%m/%Y")], capture_output=True, check=True)
         if out.returncode != 0:
             return None
         output = out.stdout.decode('utf-8')

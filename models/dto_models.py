@@ -5,13 +5,24 @@ from werkzeug.datastructures import FileStorage
 
 
 @dataclass
+class DataPoint:
+    x: object
+    y: object
+
+@dataclass
+class chartEntry:
+    name: str
+    values: list[DataPoint]
+
+
+@dataclass
 class ChartDTO:
     visualization_id: int
     name: str
     start_date: datetime
     end_date: datetime
     prediction: bool
-    values: List[List[int]]
+    values: list[chartEntry]
     spread: int
 @dataclass
 class FileUpdate:

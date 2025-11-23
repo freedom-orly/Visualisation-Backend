@@ -5,6 +5,7 @@ import io
 from flask_sqlalchemy import SQLAlchemy
 from models.db_models import Base, File, DataFile, RScriptFile, Visualization
 from models.dto_models import ChartQuery, FileQuery, FileUploadQuery
+from werkzeug.datastructures import FileStorage
 from types import SimpleNamespace
 from db_models_init import db_models_init
 from flask_cors import CORS
@@ -15,7 +16,7 @@ import os
 db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db' # not clue why this path is working but ok
 app.config['DEBUG'] = True
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
@@ -23,10 +24,21 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
     db_models_init(db)
-
+    if db.session.query(RScriptFile).count() == 0:
+        with open("helper_forecast.R", "rb") as f: # !!! Im keeping it hardcoded 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=3, 
+            ))
+        with open("forcast_aggregator.R", "rb") as f: # !!! Im keeping it hardcoded 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=3, 
+            ))
+    
 @app.route('/')
 def hello_world():
-    return 'Hello World'
+    return ''
 
 
 @app.route("/api/upload/data", methods=["POST"])

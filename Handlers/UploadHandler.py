@@ -155,7 +155,7 @@ def search_data_files(query: FileQuery, db: SQLAlchemy):
         print("QUUERY: ", dbQuery)
         results = dbQuery.all()
 
-        return [
+        d = [
         FileDTO(
             id=f.id, # type: ignore
             name=f.name, # type: ignore
@@ -166,6 +166,7 @@ def search_data_files(query: FileQuery, db: SQLAlchemy):
         ) # type: ignore
         for f in results
     ]
+        return d
         
 def search_rscript_files(query: FileQuery, db: SQLAlchemy):
         dbQuery = db.session.query(RScriptFile).filter(RScriptFile.visualization_id == query.visualization_id) # type: ignore

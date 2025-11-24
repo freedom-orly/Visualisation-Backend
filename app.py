@@ -1,90 +1,126 @@
-from flask import Flask, request, jsonify
+from datetime import datetime
+from flask import Flask, json, request, jsonify
 import pandas as pd
 import io
+from flask_sqlalchemy import SQLAlchemy
+from models.db_models import Base, File, DataFile, RScriptFile, Visualization
+from models.dto_models import ChartQuery, FileQuery, FileUploadQuery
+from werkzeug.datastructures import FileStorage
+from types import SimpleNamespace
+from db_models_init import db_models_init
+from flask_cors import CORS
 
+from Handlers import UploadHandler, VisualizationHandler
+import os
+
+db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db' # not clue why this path is working but ok
+app.config['DEBUG'] = True
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-REQUIRED_SALES_HEADERS = [
-    "ReceiptDateTime", "ArticleId", "NetAmountExcl",
-    "Quantity", "Article", "SubgroupId", "MaingroupId", "StoreId"
-]
-
-REQUIRED_VISITOR_HEADERS = [
-    "AccessGroupId", "Date", "Time", "NumberOfUsedEntrances"
-]
-
-SAMPLE_ROWS = 1000
-MAX_WARN_ROWS_SHOWN = 10
-
-#-------Helpers---------
-
-#Return set of lowercased column names for case-insensitive comparison.
-def _normalize_header_set(cols):
-    return {c.strip().lower() for c in cols}
-
-#-----------------------
-
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+    db_models_init(db)
+    if db.session.query(RScriptFile).count() == 0:
+        with open("helper_forecast.R", "rb") as f: # !!! Im keeping it hardcoded 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=3, 
+            ))
+        with open("forcast_aggregator.R", "rb") as f: # !!! Im keeping it hardcoded 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=3, 
+            ))
+    
 @app.route('/')
 def hello_world():
-    return 'Hello World'
+    return ''
 
 
 @app.route("/api/upload/data", methods=["POST"])
 #Checks if file headers are valid
 def file_validation():
-    file = request.files.get("file")
-    file_name = request.form.get("file_name")
-
-    if not file:
+    if 'file' not in request.files:
         return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
-    
-    if not file_name:
-        return jsonify({"status": "rejected", "errors": ["No file name provided in 'file_name' field."]}), 400
-
-    #Try read sample from file
-    try:
-        content = file.read()
-        sample_buf = io.BytesIO(content)
+    if 'visualization_id' not in request.form:
+        return jsonify({"status": "rejected", "errors": ["No visualization_id provided in 'visualization_id' field."]}), 400
+    try: 
+        query: FileUploadQuery = FileUploadQuery(
+            file=request.files['file'],
+            visualization_id=int(request.form.get("visualization_id", type=int)) # type: ignore
+        )
     except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Failed to read uploaded file: {str(e)}"]}), 400
-    
-    #Check if we can read the headers
-    try:
-        sample_headers_df = pd.read_csv(io.BytesIO(content), nrows=0, sep=";")
-        received_headers = list(sample_headers_df.columns)
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.upload_data_file(query=query, db=db)
+
+@app.route("/api/upload/rscript", methods=["POST"]) # type: ignore
+def upload_rscript():
+    if 'file' not in request.files:
+        return jsonify({"status": "rejected", "errors": ["No file provided in 'file' field."]}), 400
+    if 'visualization_id' not in request.form:
+        return jsonify({"status": "rejected", "errors": ["No visualization_id provided in 'visualization_id' field."]}), 400
+    try: 
+        query: FileUploadQuery = FileUploadQuery(
+            file=request.files['file'],
+            visualization_id=int(request.form.get("visualization_id", type=int)) # type: ignore
+        )
     except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Unable to parse CSV headers: {str(e)}"]}), 400
-    
-    #Lowered headers file_name is used to see which file headers to use
-    if file_name == "sales":
-        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
-    elif file_name == "visitors":
-        req_lower = _normalize_header_set(REQUIRED_VISITOR_HEADERS)
-    else:
-        req_lower = _normalize_header_set(REQUIRED_SALES_HEADERS)
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.upload_r_script_file(query=query, db=db)
 
-    rec_lower = _normalize_header_set(received_headers)
 
-    #Check if headers are missing
-    missing = [h for h in req_lower if h not in rec_lower]
-    if missing:
-        return jsonify({
-            "status": "rejected",
-            "errors": [f"Missing required columns: {missing}. Received: {received_headers}"]
-        }), 400
-    
-    #Read a sample of rows for content validation
+@app.route("/api/data/search", methods=["POST"])
+def get_files():
     try:
-        sample_df = pd.read_csv(io.BytesIO(content), dtype=str, nrows=SAMPLE_ROWS, sep=";")
+        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
     except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Failed to parse CSV sample rows: {str(e)}"]}), 400
-    
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.search_data_files(query=query, db=db)
 
-    #Return success marker.
-    return jsonify({"status": "ok", "message": "Validation passed on sample rows."}), 200
+@app.route("/api/rscripts/search", methods=["POST"])
+def get_rscript_files():
+    try:
+        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.search_rscript_files(query=query, db=db)
+
+@app.route("/api/rscripts/<visualization_id>", methods=["GET"])
+def get_last_rscript_by_visualization(visualization_id: int):
+    return jsonify(VisualizationHandler.get_last_rscripts_updates(v=visualization_id, db=db))
+
+@app.route("/api/data/<visualization_id>", methods=["GET"])
+def get_last_data_by_visualization(visualization_id: int):
+    return jsonify(VisualizationHandler.get_last_data_updates(v=visualization_id, db=db))
+
+@app.route("/api/files", methods=["GET"])
+def list_files():
+    return jsonify(UploadHandler.list_files(db=db))
+
+@app.route("/api/visualizations", methods=["GET"])
+def get_visualizations():
+    return jsonify(VisualizationHandler.get_visualizations(db=db))
+
+
+@app.route("/api/visualization/<id>", methods=["GET"])
+def get_visualization_byId(id: int):
+    return jsonify(VisualizationHandler.get_visualization(db=db, id=id)) # type: ignore
+
+@app.route("/api/visualizations/chart", methods=["POST"])
+def get_chart():
+    try:
+        query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
+        query.start_date = datetime.strptime(query.start_date, "%Y-%m-%d") # type: ignore
+        query.end_date = datetime.strptime(query.end_date, "%Y-%m-%d") # type: ignore
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return  jsonify(VisualizationHandler.get_chart(query=query, db=db))
 
 
 if __name__ == '__main__':
-    
+    #db.init_app(app)
     app.run(debug=True)

@@ -1,17 +1,34 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
+from werkzeug.datastructures import FileStorage
 
 
 @dataclass
-class Chart:
+class DataPoint:
+    x: object
+    y: object
+
+@dataclass
+class chartEntry:
+    name: str
+    values: list[DataPoint]
+
+
+@dataclass
+class ChartDTO:
     visualization_id: int
     name: str
-    timespan: Optional[timedelta]
+    start_date: datetime
+    end_date: datetime
     prediction: bool
-    values: List[List[int]]
-    spread: Optional[timedelta]
-
+    values: list[chartEntry]
+    spread: int
+@dataclass
+class FileUpdate:
+    id: int
+    name: str
+    time: datetime  
 
 @dataclass
 class VisualizationDTO:
@@ -19,7 +36,13 @@ class VisualizationDTO:
     name: str
     description: str
     is_prediction: bool
-    last_updates: List[datetime]
+
+@dataclass
+class ChartQuery:
+    id: int
+    start_date: datetime
+    end_date: datetime
+    spread: int
 
 
 @dataclass
@@ -29,11 +52,27 @@ class FileQuery:
     query: str
     timespan: Optional[timedelta]
     extension: str
+    
+@dataclass
+class FileUploadQuery:
+    file: FileStorage
+    visualization_id: int
 
+@dataclass
+class FileDTO:
+    visualization_id: int
+    id: int
+    name: str
+    file_path: str
+    upload_time: str  #ISO time
+    download_url: str 
 
 @dataclass
 class FilePage:
     start: int
     count: int
     query: FileQuery
-    files: List['File']
+    files: List[FileDTO]
+
+
+

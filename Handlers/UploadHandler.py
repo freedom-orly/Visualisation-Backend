@@ -131,12 +131,13 @@ def upload_r_script_file(query: FileUploadQuery, db: SQLAlchemy):
     # Save the R script file to diskapp.run(debug=True)
     try:
         Path(f"./instance/store/{query.visualization_id}/rscripts").mkdir(parents=True, exist_ok=True)
-        file_path = f"./instance/store/{query.visualization_id}/rscripts/{file.filename}"
+        
+        file_path = f"./instance/store/{query.visualization_id}/rscripts/{file.filename.split('/')[-1]}" # type: ignore
         with open(file_path, "wb") as f:
             f.write(content)
         
         new_r_script_file = RScriptFile(
-            name=file.filename, # type: ignore
+            name=file.filename.split('/')[-1], # type: ignore
             file_path=file_path,
             visualization_id=query.visualization_id,
         )

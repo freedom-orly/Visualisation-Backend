@@ -24,21 +24,10 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
     db_models_init(db)
-    if db.session.query(RScriptFile).count() == 0:
-        with open("helper_forecast.R", "rb") as f: # !!! Im keeping it hardcoded 
-            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
-                file=FileStorage(f),
-                visualization_id=3, 
-            ))
-        with open("forcast_aggregator.R", "rb") as f: # !!! Im keeping it hardcoded 
-            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
-                file=FileStorage(f),
-                visualization_id=3, 
-            ))
     
 @app.route('/')
 def hello_world():
-    return ''
+    return 'hello world'
 
 
 @app.route("/api/upload/data", methods=["POST"])

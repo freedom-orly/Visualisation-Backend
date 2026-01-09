@@ -6,7 +6,9 @@ args <- commandArgs(trailingOnly = TRUE)
 packages <- c(
   "readr",
   "tidyverse",
-  "lubridate"
+  "lubridate",
+  "jsonlite",
+  "purrr"
 )
 
 install_and_load <- function(pkg) {
@@ -23,13 +25,17 @@ for (p in packages) {
   install_and_load(p)
 }
 
+parameters_json_str <- args[2]
+parameters <- fromJSON(parameters_json_str)
+#print(parameters)
+
 vis_id <- args[1]
-source(file.path(getwd(),"instance", "store",vis_id,"rscripts", "updated_scenario_engine.R"))
+#source(file.path(getwd(),"instance", "store",vis_id,"rscripts", "updated_scenario_engine.R"))
 
 
 data_dir <- file.path(getwd(),"instance", "store",vis_id,"data")
 
-total_sales <- read_csv2(file.path(data_dir,"stores_total_sales.csv"))
+#total_sales <- read_csv2(file.path(data_dir,"stores_total_sales.csv"))
 store_distribution <- read_csv2(file.path(data_dir,"store_distribution_percentage.csv"))
 sales_attractiveness <- read_csv2(file.path(data_dir,"sales_attractiveness.csv"))
 distance_df <- read.csv(file.path(data_dir,"completed_friction_matrix2.csv"), check.names = FALSE)
@@ -108,7 +114,7 @@ simulation_engin <- function(stores_list, stores_to_close, loss_rate){
     
     final_results <- rbind(final_results, temp_results)
     
-    print(paste("Processed Closure for Store:", i, "| Loss Rate:", round(loss_prob, 1), "%"))
+    #print(paste("Processed Closure for Store:", i, "| Loss Rate:", round(loss_prob, 1), "%"))
   }
     return(final_results)
   
@@ -120,7 +126,7 @@ get_attractivness <- function(storeId){
     pull(Avg_sales)
   
   if (length(value) == 0) {
-    print(paste("WARNING: Store", storeId, "not found in Sales Data."))
+    #print(paste("WARNING: Store", storeId, "not found in Sales Data."))
     return(0)
   }
   
@@ -164,24 +170,34 @@ calc_simularity <- function(openStore, closedStore){
 
 
 #RUN
-loss_rate <- 0.2
+loss_rate <- parameters$loss_rate
+stores_to_close_list <- c(as.integer(parameters$stores_to_close))
 new_results <- simulation_engin(stores_list, stores_to_close_list, loss_rate)
-View(new_results)
+#View(new_results)
 
-# formated <- final_forecast %>%
-#   group_by(locationid) %>%
-#   summarise(
-#     name = paste0("Location_", unique(locationid)),
-#     values = list(
-#       # create a data frame for each location
-#       data.frame(
-#         x = Date,
-#         y = predicted_sales
-#       )
-#     )
-#   ) %>%
-#   select(name, values)
+formated <- list()
+
+for (s in unique(new_results$Source_Store)) {
+
+  d <- new_results[new_results$Source_Store == s, ]
+
+  formated <- append(
+    formated,
+    list(
+      list(
+        name = paste0("Probability_", s),
+        values = map2(d$Target_Store, d$Probability,
+                      ~ list(x = .x, y = .y))
+      ),
+      list(
+        name = paste0("Utility_Score_", s),
+        values = map2(d$Target_Store, d$Utility_Score,
+                      ~ list(x = .x, y = .y))
+      )
+    )
+  )
+}
 
 
 # #print results
-#  cat(toJSON(formated, pretty = TRUE))
+cat(toJSON(formated, pretty = TRUE, auto_unbox = TRUE))

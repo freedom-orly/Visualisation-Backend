@@ -19,11 +19,12 @@ class chartEntry:
 class ChartDTO:
     visualization_id: int
     name: str
-    start_date: datetime
-    end_date: datetime
+    chartType: Optional[str]
+    # start_date: datetime
+    # end_date: datetime
     prediction: bool
     values: list[chartEntry]
-    spread: int
+    # spread: int
 @dataclass
 class FileUpdate:
     id: int
@@ -40,9 +41,19 @@ class VisualizationDTO:
 @dataclass
 class ChartQuery:
     id: int
-    start_date: datetime
-    end_date: datetime
-    spread: int
+     #inputs?: {[key: string]: any};
+    inputs: Optional[dict]
+    
+@dataclass
+class VisualizationInputFieldDTO:
+    id: int
+    visualization_id: int
+    field_name: str
+    field_type: str
+    field_label: Optional[str]
+    options: Optional[List[str]]
+    default_value: Optional[str]
+    required: bool
 
 
 @dataclass

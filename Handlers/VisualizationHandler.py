@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta
 import subprocess
 from types import SimpleNamespace
-from typing import List
+from typing import List, Optional
 
 from flask import json
 from flask_sqlalchemy import SQLAlchemy
-from models.dto_models import ChartDTO, ChartQuery, FileUpdate, VisualizationDTO, chartEntry, DataPoint
+from models.dto_models import ChartDTO, ChartQuery, FileUpdate, VisualizationDTO, VisualizationInputFieldDTO, chartEntry, DataPoint
 from models.db_models import DataFile, Visualization, RScriptFile
 
+
+def get_obj_dict(obj):
+    return obj.__dict__
 
 STATIC_VALUES = [DataPoint(x=i, y=v) for i, v in [
     [0, 1203],
@@ -92,24 +95,26 @@ def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
     if not visual or not visual.r_script_files:
         return None
     
-    if not query.spread:
-        return None
+    # if not query.spread:
+    #     return None
     
-    if not query.start_date or not query.end_date:
-        return None 
+    # if not query.start_date or not query.end_date:
+    #     return None 
     
-    return run_rscript(visualization=visual,start_date=query.start_date,end_date=query.end_date, spread=query.spread)
+    return run_rscript(visualization=visual,inputs=query.inputs)
     
 
 
-def run_rscript(visualization: Visualization, start_date: datetime, end_date: datetime, spread: int) -> ChartDTO | None:
+def run_rscript(visualization: Visualization, inputs: Optional[dict] = None) -> ChartDTO | None:
     rscript: RScriptFile = visualization.r_script_files[-1] if visualization.r_script_files else None # type: ignore
     if not rscript:
         return None
     output = ""
     parsed_values: list[chartEntry] = []
+    inputs_json_str = json.dumps(inputs, default=get_obj_dict) if inputs else "{}"
+    
     try:
-        out = subprocess.run(['Rscript', rscript.file.file_path,str(visualization.id),start_date.strftime("%d/%m/%Y"),end_date.strftime("%d/%m/%Y")], capture_output=True, check=True, )
+        out = subprocess.run(['Rscript', rscript.file.file_path,str(visualization.id),inputs_json_str], capture_output=True, check=True, )
         if out.returncode != 0:
             return None
         output = out.stdout.decode('utf-8')
@@ -121,9 +126,7 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
         visualization_id=visualization.id, # type: ignore
         name=visualization.name, # type: ignore
         prediction=visualization.prediction, # type: ignore
-        spread=spread,
-        start_date=start_date,
-        end_date=end_date,
+        chartType=visualization.chart_type, # type: ignore
         values= [
             chartEntry('store1', STATIC_VALUES),
             chartEntry('store2', STATIC_VALUES)
@@ -135,10 +138,8 @@ def run_rscript(visualization: Visualization, start_date: datetime, end_date: da
         visualization_id=visualization.id, # type: ignore
         name=visualization.name, # type: ignore
         prediction=visualization.prediction, # type: ignore
-        spread=spread,
-        start_date=start_date,
-        end_date=end_date,
-        values= parsed_values
+        values= parsed_values,
+        chartType=visualization.chart_type, # type: ignore
         )
     return dto
 
@@ -177,6 +178,27 @@ def get_last_data_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
             upload_time=f.upload_time # type: ignore
         ) for f in files
     ]
+    
+def get_visualization_input_fields(db: SQLAlchemy, id: int) -> List[VisualizationInputFieldDTO]:
+    visual = db.session.get(Visualization, id, options=[
+        db.joinedload(Visualization.fields)
+    ])
+    if not visual:
+        return []
+    input_fields_dto: List[VisualizationInputFieldDTO] = []
+    for field in visual.fields:
+        field_dto = VisualizationInputFieldDTO(
+            id=field.id, # type: ignore
+            visualization_id=field.visualization_id, # type: ignore
+            field_name=field.field_name, # type: ignore
+            field_type=field.field_type, # type: ignore
+            field_label=field.field_label, # type: ignore
+            options=field.options.split(",") if field.options else None, # type: ignore
+            default_value=field.default_value, # type: ignore
+            required=field.required # type: ignore
+        )
+        input_fields_dto.append(field_dto)
+    return input_fields_dto
     
 def get_last_rscripts_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
     one_month_ago = datetime.now() - timedelta(days=30)

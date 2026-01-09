@@ -4,6 +4,7 @@ library(ranger)
 library(zoo)
 library(tidyr)
 library(readxl)
+library(ggplot2)
 
 source("helper_forecast.R")
 
@@ -91,7 +92,7 @@ print_results <- function(final_forecast){
 #--- TO RUN FORCST---
 #DATES TO FORCAST
 start_date_str <- "01/11/2025"
-end_date_str <- "09/11/2025"
+end_date_str <- "01/11/2026"
 
 #ONLY NEEDS TO BE CALLED ONCE
 all_assets <- load_model_and_data_files()
@@ -101,3 +102,30 @@ final_forecast <- make_forcast(all_assets, start_date_str, end_date_str)
 
 #print results
 print_results(final_forecast)
+
+
+
+#------------------------------------
+ggplot(final_forecast, aes(x = Date, y = predicted_sales)) +
+  
+  # Set the color directly inside the geoms for a consistent look
+  geom_line(aes(group = locationid), color = "tomato", linewidth = 1) +
+  geom_point(color = "tomato", size = 1.5) +
+  
+  # Separate plots by location, allowing y-axes to vary (free_y)
+  facet_wrap(~locationid, scales = "free_y", ncol = 2) +
+  
+  # Customize labels
+  labs(
+    title = "Forecasted Daily Sales by Location",
+    x = "Date",
+    y = "Predicted Total Sales"
+  ) +
+  
+  # Use a clean theme
+  theme_minimal(base_size = 14) +
+  # Remove the theme() line that was incomplete
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold")
+  )

@@ -63,15 +63,6 @@ def upload_rscript():
         return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
     return UploadHandler.upload_r_script_file(query=query, db=db)
 
-@cross_origin()
-@app.route("/api/data/search", methods=["POST"])
-def get_files():
-    try:
-        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
-    except Exception as e:
-        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
-    return UploadHandler.search_data_files(query=query, db=db)
-
 
 @cross_origin()
 @app.route("/api/rscripts/search", methods=["POST"])
@@ -84,9 +75,9 @@ def get_rscript_files():
 
 
 @cross_origin()
-@app.route("/api/rscripts/<visualization_id>", methods=["GET"])
+@app.route("/api/updates/<visualization_id>", methods=["GET"])
 def get_last_rscript_by_visualization(visualization_id: int):
-    return jsonify(VisualizationHandler.get_last_rscripts_updates(v=visualization_id, db=db))
+    return jsonify(UploadHandler.get_last_files_updates(v=visualization_id, db=db))
 
 
 @cross_origin()
@@ -94,11 +85,25 @@ def get_last_rscript_by_visualization(visualization_id: int):
 def get_last_data_by_visualization(visualization_id: int):
     return jsonify(VisualizationHandler.get_last_data_updates(v=visualization_id, db=db))
 
+@cross_origin()
+@app.route("/api/data/search", methods=["POST"])
+def get_files():
+    try:
+        query: FileQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d)) # This way we have mapped object with attributes instead of dict
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
+    return UploadHandler.search_data_files(query=query, db=db)
+
 
 @cross_origin()
 @app.route("/api/files", methods=["GET"])
 def list_files():
     return jsonify(UploadHandler.list_files(db=db))
+
+@cross_origin()
+@app.route("/api/files/<file_id>", methods=["DELETE"])
+def delete_file(file_id: int):
+    return UploadHandler.delete_file(file_id=file_id, db=db)
 
 
 @cross_origin()

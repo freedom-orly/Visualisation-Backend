@@ -1,12 +1,13 @@
+from ast import List
 import io
 from flask import Response, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from requests import request
 from models.db_models import File, DataFile, RScriptFile, Visualization
-from models.dto_models import FileQuery, FileUploadQuery, FileDTO
+from models.dto_models import FileQuery, FileUpdate, FileUploadQuery, FileDTO
 from pathlib import Path
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 REQUIRED_SALES_HEADERS = [
     "ReceiptDateTime", "ArticleId", "NetAmountExcl",
@@ -200,3 +201,34 @@ def list_files(db: SQLAlchemy) -> list[FileDTO]:
         ) # type: ignore
         for f in dbQuery
     ]
+    
+def get_last_files_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]: # type: ignore
+    one_month_ago = datetime.now() - timedelta(days=30)
+    rscripts = db.session.query(RScriptFile).filter(
+        RScriptFile.visualization_id == v, # type: ignore
+        RScriptFile.upload_time >= one_month_ago # type: ignore
+    ).all()
+    datafiles = db.session.query(DataFile).filter(
+        DataFile.visualization_id == v, # type: ignore
+        DataFile.upload_time >= one_month_ago # type: ignore
+    ).all()
+    return [
+        FileUpdate(
+            id=f.id, # type: ignore
+            name=f.name, # type: ignore
+            time=f.upload_time # type: ignore
+        ) for f in rscripts + datafiles
+    ]
+    
+def delete_file(file_id: int, db: SQLAlchemy):
+    file = db.session.get(File, file_id)
+    if not file:
+        return jsonify({"status": "rejected", "errors": [f"File not found"]}), 404
+    try:
+        db.session.delete(file)
+        Path(file.file_path).unlink(missing_ok=True) # type: ignore
+        
+        db.session.commit()
+    except Exception as e:
+        return jsonify({"status": "rejected", "errors": [f"Failed to delete file: {str(e)}"]}), 500
+    return jsonify({"status": "ok", "message": "File deleted successfully"}), 200

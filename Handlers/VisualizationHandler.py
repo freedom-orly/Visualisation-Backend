@@ -199,21 +199,6 @@ def get_visualization_input_fields(db: SQLAlchemy, id: int) -> List[Visualizatio
         )
         input_fields_dto.append(field_dto)
     return input_fields_dto
-    
-def get_last_rscripts_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]:
-    one_month_ago = datetime.now() - timedelta(days=30)
-    files = db.session.query(RScriptFile).filter(
-        RScriptFile.visualization_id == v, # type: ignore
-        RScriptFile.upload_time >= one_month_ago # type: ignore
-    ).all()
-    return [
-        FileUpdate(
-            file_id=f.id, # type: ignore
-            file_name=f.name, # type: ignore
-            upload_time=f.upload_time # type: ignore
-        ) for f in files
-    ]
-
 
 def get_visualizations(db: SQLAlchemy) -> List[VisualizationDTO]:
     dbQuery = db.session.query(Visualization)

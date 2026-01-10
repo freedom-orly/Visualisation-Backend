@@ -15,8 +15,8 @@ class File(Base):
     upload_time = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    data_file = relationship('DataFile', back_populates='file', uselist=False)
-    r_script_file = relationship('RScriptFile', back_populates='file', uselist=False)
+    data_file = relationship('DataFile', back_populates='file', uselist=False, cascade='all, delete-orphan')
+    r_script_file = relationship('RScriptFile', back_populates='file', uselist=False, cascade='all, delete-orphan')
     
     def __init__(self, name: str, file_path: str):
         self.name = name

@@ -30,10 +30,12 @@ parameters <- fromJSON(parameters_json_str)
 #print(parameters)
 
 vis_id <- args[1]
-#source(file.path(getwd(),"instance", "store",vis_id,"rscripts", "updated_scenario_engine.R"))
+source(file.path(getwd(),"instance", "store",vis_id,"rscripts", "data_prep_functions.R"))
 
 
 data_dir <- file.path(getwd(),"instance", "store",vis_id,"data")
+
+data_prep(vis_id)
 
 #total_sales <- read_csv2(file.path(data_dir,"stores_total_sales.csv"))
 store_distribution <- read_csv2(file.path(data_dir,"store_distribution_percentage.csv"))

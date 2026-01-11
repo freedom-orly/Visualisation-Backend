@@ -1,0 +1,79 @@
+dir.create(Sys.getenv("R_LIBS_USER"), recursive = TRUE)  # create personal library
+.libPaths(Sys.getenv("R_LIBS_USER"))
+
+args <- commandArgs(trailingOnly = TRUE)
+
+packages <- c(
+  "readr",
+  "tidyverse",
+  "lubridate",
+  "jsonlite"
+)
+
+install_and_load <- function(pkg) {
+  if (!require(pkg, character.only = TRUE)) {
+    #message(paste("📦 Installing missing package:", pkg))
+    install.packages(pkg, dependencies = TRUE, repos='http://cran.us.r-project.org')
+    library(pkg, character.only = TRUE)
+  } else {
+    #message(paste("✅ Package already loaded:", pkg))
+  }
+}
+
+for (p in packages) {
+  install_and_load(p)
+}
+
+parameters_json_str <- args[2]
+parameters <- fromJSON(parameters_json_str)
+
+vis_id <- args[1]
+
+data_dir <- file.path(getwd(),"instance", "store",vis_id,"data")
+
+sales_data <- read_csv2(file.path(data_dir,"sales.csv"))
+#sales_data <- read_csv2("D:/YEAR2/wildlands/R/Scenario_engine/DATA/assignment2-fulldata-NDAprotected/sales.csv")
+
+latest_sales <- function() {
+  
+  #Clean Data
+  sales_cleaned <- sales_data %>%
+    mutate(
+      ReceiptDateTime = as.POSIXct(ReceiptDateTime),
+      Date = floor_date(ReceiptDateTime, "day")
+    ) %>%
+    filter(NetAmountExcl >= 0.1)
+  
+  #Define Time Window
+  latest_date <- max(sales_cleaned$Date, na.rm = TRUE)
+  start_date <- latest_date - days(30)
+  
+  #Calculate Daily Totals 
+  daily_sales <- sales_cleaned %>%
+    filter(Date >= start_date) %>%
+    group_by(StoreId, Date) %>%
+    summarise(DailyTotal = sum(NetAmountExcl), .groups = "drop")
+
+  formatted_data <- daily_sales %>%
+    complete(StoreId, Date = seq(start_date, latest_date, by = "day"), fill = list(DailyTotal = 0)) %>%
+
+    mutate(Date = format(Date, "%d-%m-%Y")) %>%
+    
+    rename(
+      name = StoreId,
+      x = Date,
+      y = DailyTotal
+    ) %>%
+
+    group_by(name) %>%
+    nest(value = c(x, y)) %>%
+    ungroup()
+
+  json_output <- toJSON(formatted_data, pretty = TRUE, auto_unbox = TRUE)
+  
+  return(json_output)
+}
+
+json_result <- latest_sales()
+
+cat(json_result)

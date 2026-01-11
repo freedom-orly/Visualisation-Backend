@@ -18,7 +18,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db' # not clue why this path is working but ok
 app.config['DEBUG'] = True
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:8100"}})
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:4200"}})
 
 db.init_app(app)
 with app.app_context():
@@ -124,13 +124,21 @@ def get_chart():
         query: ChartQuery = json.loads(request.data, object_hook=lambda d: SimpleNamespace(**d))
     except Exception as e:
         return jsonify({"status": "rejected", "errors": [f"Invalid input data: {str(e)}"]}), 400
-    return  jsonify(VisualizationHandler.get_chart(query=query, db=db))
+    d = VisualizationHandler.get_chart(query=query, db=db)
+    if d is None:
+        return jsonify({"status": "rejected", "errors": ["Chart not found"]}), 404
+    return  jsonify(d)
 
 @cross_origin()
 @app.route("/api/visualizations/<id>/input-fields", methods=["GET"])
 def get_visualization_input_fields(id: int):
     return jsonify(VisualizationHandler.get_visualization_input_fields(db=db, id=id)) # type: ignore
 
+@cross_origin()
+@app.route("/api/files/exists", methods=["GET"])
+def check_data_files_exists():
+    exists = UploadHandler.check_data_files_exists(db=db)
+    return jsonify(exists)
 
 if __name__ == '__main__':
     #db.init_app(app)

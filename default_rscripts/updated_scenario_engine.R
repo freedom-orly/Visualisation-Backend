@@ -190,11 +190,6 @@ for (s in unique(new_results$Source_Store)) {
         name = paste0("Probability_", s),
         values = map2(d$Target_Store, d$Probability,
                       ~ list(x = .x, y = .y))
-      ),
-      list(
-        name = paste0("Utility_Score_", s),
-        values = map2(d$Target_Store, d$Utility_Score,
-                      ~ list(x = .x, y = .y))
       )
     )
   )

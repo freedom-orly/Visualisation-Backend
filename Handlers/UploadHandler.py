@@ -232,3 +232,9 @@ def delete_file(file_id: int, db: SQLAlchemy):
     except Exception as e:
         return jsonify({"status": "rejected", "errors": [f"Failed to delete file: {str(e)}"]}), 500
     return jsonify({"status": "ok", "message": "File deleted successfully"}), 200
+
+def check_data_files_exists(db: SQLAlchemy):
+    count = db.session.query(DataFile).count()
+    if count > 0:
+        return True
+    return False

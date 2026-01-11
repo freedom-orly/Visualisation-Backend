@@ -14,6 +14,23 @@ library(forecast)
 library(purrr)
 
 # ==========================================================
+# 📥 5. Data Import
+# ==========================================================
+sales         <- read.csv("sales.csv", header = TRUE, sep = ";")
+sales2        <- read.csv("salehourly_location_store.csv")
+hours         <- read_excel("hours.xlsx")
+locations     <- read_excel("linktables.xlsx", sheet = "locations")
+links         <- read_excel("linktables.xlsx", sheet = "stores")
+departments   <- read_excel("departments.xlsx", sheet = "Blad1")
+holidays      <- read_excel("holidays.xlsx", sheet = "Blad1")
+teams         <- read_excel("teams.xlsx", sheet = "Blad1")
+store         <- read.csv("store.csv", header = TRUE, sep = ";")
+subgroup      <- read.csv("subgroup.csv", header = TRUE, sep = ";")
+maingroup     <- read.csv("maingroup.csv", header = TRUE, sep = ";")
+visitor_hourly <- read.csv("visitorhourly.csv", header = TRUE, sep = ";")
+
+
+# ==========================================================
 # ⚙️ 2. Utility Functions
 # ==========================================================
 
@@ -184,6 +201,54 @@ heatmaps_by_location <- function(year_input, sales_data = sales_location_nona) {
   list(aggregated_data = sales_hourly, heatmaps = heatmap_list)
 }
 
+heatmaps_by_store <- function(year_input, sales_data = sales2) {
+  
+  # 1. Prepare and Filter Data
+  sales_year <- sales_data %>%
+    mutate(
+      Date = as.Date(Date),
+      # Extract Month (abbreviated name)
+      Month = month(Date, label = TRUE, abbr = TRUE),
+      # Extract Hour (as numeric)
+      Hour = as.numeric(substr(Time, 1, 2))
+    ) %>%
+    # Filter for the target year and ensure StoreId is not NA
+    filter(year(Date) == year_input, !is.na(StoreId))
+  
+  # 2. Aggregate Sales by Store, Month, and Hour
+  sales_hourly <- sales_year %>%
+    group_by(StoreId, Month, Hour) %>%
+    summarise(total_sales = sum(total, na.rm = TRUE), .groups = "drop") %>%
+    # Ensure Month levels are correct for proper Y-axis order
+    mutate(Month = factor(Month, levels = month.abb))
+  
+  # 3. Generate Heatmaps
+  stores <- unique(sales_hourly$StoreId)
+  heatmap_list <- lapply(stores, function(store) {
+    # Filter data for the current store
+    data_store <- sales_hourly %>% filter(StoreId == store)
+    
+    # Create the ggplot heatmap
+    ggplot(data_store, aes(x = Hour, y = Month, fill = total_sales)) +
+      geom_tile(color = "white") +
+      scale_fill_gradient(low = "lightyellow", high = "darkred", name = "Sales") +
+      scale_x_continuous(breaks = 0:23) +
+      labs(
+        title = paste("Heatmap of Sales by Hour - Store", store, "-", year_input),
+        x = "Hour of Day", y = "Month"
+      ) +
+      theme_minimal(base_size = 12) +
+      # Rotate X-axis labels for clarity
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  # Name the list elements for easy access
+  names(heatmap_list) <- paste0("Store_", stores)
+  
+  # Return the aggregated data and the list of heatmaps
+  list(aggregated_data = sales_hourly, heatmaps = heatmap_list)
+}
+
 # ----------------------------------------------------------
 # Average Sales per Visitor
 # ----------------------------------------------------------
@@ -330,20 +395,7 @@ head(users_store_sales)
 # ==========================================================
 ctrl <- trainControl(method = "cv", number = 10)
 
-# ==========================================================
-# 📥 5. Data Import
-# ==========================================================
-sales         <- read.csv("sales.csv", header = TRUE, sep = ";")
-hours         <- read_excel("hours.xlsx")
-locations     <- read_excel("linktables.xlsx", sheet = "locations")
-links         <- read_excel("linktables.xlsx", sheet = "stores")
-departments   <- read_excel("departments.xlsx", sheet = "Blad1")
-holidays      <- read_excel("holidays.xlsx", sheet = "Blad1")
-teams         <- read_excel("teams.xlsx", sheet = "Blad1")
-store         <- read.csv("store.csv", header = TRUE, sep = ";")
-subgroup      <- read.csv("subgroup.csv", header = TRUE, sep = ";")
-maingroup     <- read.csv("maingroup.csv", header = TRUE, sep = ";")
-visitor_hourly <- read.csv("visitorhourly.csv", header = TRUE, sep = ";")
+
 
 # ----------------------------------------------------------
 # Derived Data
@@ -366,8 +418,8 @@ sales_alt <- sales %>%
   arrange(Date, Time)
 
 sale_location_dt <- sales_alt %>%
-  select(Date, Time, NetAmountExcl, locationid) %>%
-  group_by(locationid, Date, Time) %>%
+  select(Date, Time, NetAmountExcl, locationid, StoreId) %>%
+  group_by(locationid, StoreId, Date, Time) %>%
   summarise(total = sum(NetAmountExcl, na.rm = TRUE), .groups = "drop") %>%
   arrange(Date, Time)
 
@@ -395,6 +447,8 @@ sales_stores_loc <- sales_alt %>%
   summarise(total = sum(NetAmountExcl, na.rm = TRUE), .groups = "drop") %>%
   arrange(Date, Time, locationid, StoreId)
 
+all_sales_101 <- sales_alt %>%
+  filter(StoreId == "101")
 # ==========================================================
 # 📈 6. Visualizations
 # ==========================================================
@@ -433,7 +487,7 @@ ggplot(sales_daily, aes(x = as.Date(Date), y = total_sales)) +
 # ==========================================================
 # 💾 7. Save Outputs (optional)
 # ==========================================================
-# write.csv(sales_stores_loc, "sales_stores_loc.csv", row.names = FALSE)
+# write.csv(sale_location_dt, "salehourly_location_store.csv", row.names = FALSE)
 # write.csv(sales_location_nona, "sales_location_hourly.csv", row.names = FALSE)
 #
 # all_data <- list(
@@ -442,3 +496,8 @@ ggplot(sales_daily, aes(x = as.Date(Date), y = total_sales)) +
 #   forecast_results = forecast_results_loc
 # )
 # cat(toJSON(all_data, pretty = TRUE))
+results_heat <- heatmaps_by_store(
+  year_input = 2023, 
+  sales_data = sales2 
+)
+print(results_heat$heatmaps$Store_101) # Replace 101 with an actual StoreId

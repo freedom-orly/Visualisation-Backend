@@ -111,6 +111,11 @@ def db_models_init(db: SQLAlchemy):
                 file=FileStorage(f),
                 visualization_id=db.session.query(Visualization).filter_by(name="Scenario Engine").first().id, # type: ignore
             ))
+        with open(os.path.join(file_dir, "default_rscripts/get_recent_sales.R"), "rb") as f: 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=db.session.query(Visualization).filter_by(name="Sales Data History").first().id, # type: ignore
+            ))
 
 
     

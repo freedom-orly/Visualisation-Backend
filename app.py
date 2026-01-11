@@ -15,7 +15,7 @@ import os
 
 db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB limit
+app.config["MAX_CONTENT_LENGTH"] = 100000 * 1024 * 1024  # 100 MB limit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///visualizations.db' # not clue why this path is working but ok
 app.config['DEBUG'] = True
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:4200"}})

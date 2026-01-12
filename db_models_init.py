@@ -14,26 +14,26 @@ def db_models_init(db: SQLAlchemy):
     visualizations = [
         Visualization(
             name="Sales Data History",
-            description="Historical sales data visualization",
+            description="Historical sales data visualization. Files needed 'sales.csv'",
             chart_type="line",
             prediction=False
         ),
         Visualization(
             name="Weather History",
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+            description="Historical weather data for the past week. Files needed: 'sales.csv', 'weather.xlsx'",
             prediction=False,
             chart_type="line"
         ),
         Visualization(
             name="Sales Forecasting",
-            description="Forecasting future sales based on historical data and weather information. In order to use this visualization, please upload following data files: budget.xlsx, is_holiday.csv, revenue_forecast_v1.rds, sales_location_hourly.csv, total_hourly_visitors.csv, weather_data_hourly.csv",
+            description="Forecasting future sales based on historical data and weather information. In order to use this visualization. The forcasting is 1 week ahead of the last date in 'sales.csv'. Files needed: 'sales.csv', 'hours.xlxs', 'linktables.xlsx', 'departments.xlsx', 'holidays.xlsx', 'teams.xlsx', 'store.csv', 'subgroup.csv', 'maingroup.csv', 'visitorhourly.csv', 'weather.xlsx'",
             prediction=True,
             chart_type="line"
             
         ),
         Visualization(
             name="Scenario Engine",
-            description="Upload your own data and R script to create a custom visualization.",
+            description="This tool is used to simulate best/worst case scenarios from specified store closures. With this tool you can specify what stores to close, and you will get what the distribution of sales from the closed stores to new stores will be. Files needed: 'sales.csv' and 'subgroup_catagory.csv'",
             prediction=True,
             chart_type="bar"
         ),
@@ -115,6 +115,11 @@ def db_models_init(db: SQLAlchemy):
             UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
                 file=FileStorage(f),
                 visualization_id=db.session.query(Visualization).filter_by(name="Sales Data History").first().id, # type: ignore
+            ))
+        with open(os.path.join(file_dir, "default_rscripts/recent_sales_&_weather.R"), "rb") as f: 
+            UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
+                file=FileStorage(f),
+                visualization_id=db.session.query(Visualization).filter_by(name="Weather History").first().id, # type: ignore
             ))
 
 

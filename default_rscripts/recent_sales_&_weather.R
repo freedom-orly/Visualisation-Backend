@@ -63,7 +63,7 @@ latest_sales <- function() {
     select(name, x = Date, y = DailyTotal) %>%
     
     group_by(name) %>%
-    nest(value = c(x, y)) %>%
+    nest(values = c(x, y)) %>%
     ungroup()
   
   return(formatted_data)
@@ -99,7 +99,7 @@ get_weather_data <- function(){
     select(name, x, y) %>%
     
     group_by(name) %>%
-    nest(value = c(x, y)) %>%
+    nest(values = c(x, y)) %>%
     ungroup()
   
   return(filtered_data) 

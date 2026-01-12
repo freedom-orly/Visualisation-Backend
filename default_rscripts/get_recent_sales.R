@@ -66,7 +66,7 @@ latest_sales <- function() {
     ) %>%
 
     group_by(name) %>%
-    nest(value = c(x, y)) %>%
+    nest(values = c(x, y)) %>%
     ungroup()
 
   json_output <- toJSON(formatted_data, pretty = TRUE, auto_unbox = TRUE)

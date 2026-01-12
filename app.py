@@ -140,6 +140,31 @@ def check_data_files_exists():
     exists = UploadHandler.check_data_files_exists(db=db)
     return jsonify(exists)
 
+
+#   getRecentStoreRevenueChart(): Observable<ChartDTO> {
+#     return this.http.get<ChartDTO>(`${this.apiUrl}/charts/recent-store-revenue`);
+#   }
+#   getRecentWeatherDataChart(): Observable<ChartDTO> {
+#     return this.http.get<ChartDTO>(`${this.apiUrl}/charts/recent-weather-data`);
+#   }
+  
+@cross_origin()
+@app.route("/api/charts/recent-store-revenue", methods=["GET"])
+def get_recent_store_revenue_chart():
+    d = VisualizationHandler.get_recent_store_revenue_chart(db=db)
+    if d is None:
+        return jsonify({"status": "rejected", "errors": ["Chart not found"]}), 404
+    return  jsonify(d)
+
+@cross_origin()
+@app.route("/api/charts/recent-weather-data", methods=["GET"])
+def get_recent_weather_data_chart():
+    d = VisualizationHandler.get_recent_weather_data_chart(db=db)
+    if d is None:
+        return jsonify({"status": "rejected", "errors": ["Chart not found"]}), 404
+    return  jsonify(d)
+
+
 if __name__ == '__main__':
     #db.init_app(app)
     app.run(debug=True)

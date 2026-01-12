@@ -58,32 +58,44 @@ def db_models_init(db: SQLAlchemy):
             required=False,
             field_label="Stores to Close",
             options="101, 102, 108, 110, 111, 116, 120, 129, 131, 135, 138, 140, 145, 149, 156, 164",
-            default_value="108, 120",
+            default_value="[131, 135]",
         ),
         VisualizationInputField(
             visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore
-            field_name="start_date",
-            field_type="date",
-            required=True,
-            field_label="Forecast Start Date",
-            default_value="2025-01-01",
-        ),
-        VisualizationInputField(
-            visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore
-            field_name="end_date",
-            field_type="date",
-            required=True,
-            field_label="Forecast End Date",
-            default_value="2025-01-30",
-        ),
-        VisualizationInputField(
-            visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore
-            field_name="spread",
+            field_name="forecast_horizon_days",
             field_type="number",
             required=True,
-            field_label="Forecast Spread",
-            default_value="1",
+            field_label="Forecast Horizon (Days)",
+            default_value="16",
         ),
+        VisualizationInputField(
+            visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore
+            field_name="stores",
+            field_type="selectMulti",
+            required=True,
+            field_label="Stores to Forecast",
+            options="101, 102, 108, 110, 111, 116, 120, 129, 131, 135, 138, 140, 145, 149, 156, 164",
+            default_value="[101, 102, 108]",
+        ),
+        VisualizationInputField(
+            visualization_id=db.session.query(Visualization).filter_by(name="Weather History").first().id, # type: ignore
+            field_name="stores",
+            field_type="selectMulti",
+            required=True,
+            field_label="Stores to Show",
+            options="101, 102, 108, 110, 111, 116, 120, 129, 131, 135, 138, 140, 145, 149, 156, 164",
+            default_value="[101, 102, 108]",
+        ),
+        VisualizationInputField(
+            visualization_id=db.session.query(Visualization).filter_by(name="Sales Data History").first().id, # type: ignore
+            field_name="stores",
+            field_type="selectMulti",
+            required=True,
+            field_label="Stores to Show",
+            options="101, 102, 108, 110, 111, 116, 120, 129, 131, 135, 138, 140, 145, 149, 156, 164",
+            default_value="[101, 102, 108]",
+        ),
+        
     ]
     
     db.session.add_all(input_fields)
@@ -91,12 +103,12 @@ def db_models_init(db: SQLAlchemy):
     
     if db.session.query(RScriptFile).count() == 0:
         file_dir = os.path.dirname(os.path.realpath('__file__'))
-        with open(os.path.join(file_dir, "default_rscripts/helper_forecast.R"), "rb") as f:
+        with open(os.path.join(file_dir, "default_rscripts/forecast_prep.R"), "rb") as f:
             UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
                 file=FileStorage(f),
                 visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore
             ))
-        with open(os.path.join(file_dir, "default_rscripts/forcast_aggregator.R"), "rb") as f:
+        with open(os.path.join(file_dir, "default_rscripts/forecast.R"), "rb") as f:
             UploadHandler.upload_r_script_file(db=db, query=FileUploadQuery(
                 file=FileStorage(f),
                 visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore

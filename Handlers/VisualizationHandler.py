@@ -225,3 +225,15 @@ def get_visualization(db: SQLAlchemy, id: int) -> VisualizationDTO | None:
         is_prediction=v.prediction, # type: ignore
     )
     return vis_dto
+
+def get_recent_store_revenue_chart(db: SQLAlchemy) -> ChartDTO | None:
+    visual = db.session.query(Visualization).filter_by(name="Sales Data History").first()
+    if not visual:
+        return None
+    return run_rscript(visualization=visual, inputs={"stores": [101, 102, 108]})
+
+def get_recent_weather_data_chart(db: SQLAlchemy) -> ChartDTO | None:
+    visual = db.session.query(Visualization).filter_by(name="Weather History").first()
+    if not visual:
+        return None
+    return run_rscript(visualization=visual, inputs={"stores": [101]})

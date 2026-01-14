@@ -1,12 +1,14 @@
+#from ast import List\
+from typing import List
 import io
 from flask import Response, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from requests import request
 from models.db_models import File, DataFile, RScriptFile, Visualization
-from models.dto_models import FileQuery, FileUploadQuery, FileDTO
+from models.dto_models import FileQuery, FileUpdate, FileUploadQuery, FileDTO
 from pathlib import Path
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 REQUIRED_SALES_HEADERS = [
     "ReceiptDateTime", "ArticleId", "NetAmountExcl",
@@ -131,12 +133,13 @@ def upload_r_script_file(query: FileUploadQuery, db: SQLAlchemy):
     # Save the R script file to diskapp.run(debug=True)
     try:
         Path(f"./instance/store/{query.visualization_id}/rscripts").mkdir(parents=True, exist_ok=True)
-        file_path = f"./instance/store/{query.visualization_id}/rscripts/{file.filename}"
+        
+        file_path = f"./instance/store/{query.visualization_id}/rscripts/{file.filename.split('/')[-1]}" # type: ignore
         with open(file_path, "wb") as f:
             f.write(content)
         
         new_r_script_file = RScriptFile(
-            name=file.filename, # type: ignore
+            name=file.filename.split('/')[-1], # type: ignore
             file_path=file_path,
             visualization_id=query.visualization_id,
         )
@@ -199,3 +202,46 @@ def list_files(db: SQLAlchemy) -> list[FileDTO]:
         ) # type: ignore
         for f in dbQuery
     ]
+    
+def get_last_files_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]: # type: ignore
+    one_month_ago = datetime.now() - timedelta(days=30)
+    rscripts = db.session.query(RScriptFile).filter(
+        RScriptFile.visualization_id == v, # type: ignore
+        RScriptFile.upload_time >= one_month_ago # type: ignore
+    ).all()
+    datafiles = db.session.query(DataFile).filter(
+        DataFile.visualization_id == v, # type: ignore
+        DataFile.upload_time >= one_month_ago # type: ignore
+    ).all()
+    return [
+        FileUpdate(
+            id=f.id, # type: ignore
+            name=f.name, # type: ignore
+            time=f.upload_time # type: ignore
+        ) for f in rscripts + datafiles
+    ]
+    
+def delete_file(file_id: int, db: SQLAlchemy):
+    target = db.session.get(RScriptFile, file_id) or db.session.get(DataFile, file_id)
+    if not target:
+        return jsonify({"status": "rejected", "errors": [f"File not found"]}), 404
+    try:
+        Path(target.file_path).unlink(missing_ok=True) # type: ignore
+        db.session.delete(target)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "rejected", "errors": [f"Failed to delete file: {str(e)}"]}), 500
+    return jsonify({"status": "ok", "message": "File deleted successfully"}), 200
+
+def check_data_files_exists(db: SQLAlchemy):
+    sales = db.session.query(Visualization).filter_by(name="Sales Data History").first()
+    countSales = db.session.query(DataFile).filter_by(visualization_id=sales.id).count() # type: ignore
+    
+    weather = db.session.query(Visualization).filter_by(name="Weather History").first()
+    countWeather = db.session.query(DataFile).filter_by(visualization_id=weather.id).count() # type: ignore
+    
+    
+    if countSales + countWeather > 0:
+        return True
+    return False

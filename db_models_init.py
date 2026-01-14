@@ -15,7 +15,7 @@ def db_models_init(db: SQLAlchemy):
         Visualization(
             name="Sales Data History",
             description="Historical sales data visualization. Files needed 'sales.csv'",
-            chart_type="line",
+            chart_type="bar",
             prediction=False
         ),
         Visualization(
@@ -28,7 +28,7 @@ def db_models_init(db: SQLAlchemy):
             name="Sales Forecasting",
             description="Forecasting future sales based on historical data and weather information. In order to use this visualization. The forcasting is 1 week ahead of the last date in 'sales.csv'. Files needed: 'sales.csv', 'hours.xlxs', 'linktables.xlsx', 'departments.xlsx', 'holidays.xlsx', 'teams.xlsx', 'store.csv', 'subgroup.csv', 'maingroup.csv', 'visitorhourly.csv', 'weather.xlsx'",
             prediction=True,
-            chart_type="line"
+            chart_type="bar"
             
         ),
         Visualization(

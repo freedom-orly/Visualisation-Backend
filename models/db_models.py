@@ -14,10 +14,6 @@ class File(Base):
     file_path = Column(String, nullable=False)
     upload_time = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
-    data_file = relationship('DataFile', back_populates='file', uselist=False, cascade='all, delete-orphan')
-    r_script_file = relationship('RScriptFile', back_populates='file', uselist=False, cascade='all, delete-orphan')
-    
     def __init__(self, name: str, file_path: str):
         self.name = name
         self.file_path = file_path
@@ -81,7 +77,6 @@ class DataFile(File):
 
     # Relationships
     visualization = relationship('Visualization', back_populates='data_files')
-    file = relationship('File', back_populates='data_file')
     
     def __init__(self, name: str, file_path: str, rows_count: int, extension: str, visualization_id: int, timespan: datetime | None = None):
         super().__init__(name, file_path)
@@ -99,7 +94,6 @@ class RScriptFile(File):
 
     # Relationships
     visualization = relationship('Visualization', back_populates='r_script_files')
-    file = relationship('File', back_populates='r_script_file')
     
     def __init__(self, name: str, file_path: str, visualization_id: int):
         super().__init__(name, file_path)

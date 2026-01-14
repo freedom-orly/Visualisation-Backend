@@ -89,7 +89,7 @@ def get_chart(query: ChartQuery, db: SQLAlchemy) -> ChartDTO | None:
     # Implementation of the function to fetch and return visualization data
     #Gets the Visualization from query id
     visual = db.session.get(Visualization, query.id, options=[
-        db.joinedload(Visualization.r_script_files).joinedload(RScriptFile.file)
+        db.joinedload(Visualization.r_script_files)
     ])
     #ID check
     if not visual or not visual.r_script_files:
@@ -114,7 +114,7 @@ def run_rscript(visualization: Visualization, inputs: Optional[dict] = None) -> 
     inputs_json_str = json.dumps(inputs, default=get_obj_dict) if inputs else "{}"
     
     try:
-        out = subprocess.run(['Rscript', rscript.file.file_path,str(visualization.id),inputs_json_str], capture_output=True, check=True, )
+        out = subprocess.run(['Rscript', rscript.file_path, str(visualization.id), inputs_json_str], capture_output=True, check=True ) # type: ignore
         if out.returncode != 0:
             return None
         output = out.stdout.decode('utf-8')
@@ -126,7 +126,7 @@ def run_rscript(visualization: Visualization, inputs: Optional[dict] = None) -> 
         visualization_id=visualization.id, # type: ignore
         name=visualization.name, # type: ignore
         prediction=visualization.prediction, # type: ignore
-        chartType=visualization.chart_type, # type: ignore
+        chart_type=visualization.chart_type, # type: ignore
         values= [
             chartEntry('store1', STATIC_VALUES),
             chartEntry('store2', STATIC_VALUES)
@@ -139,7 +139,7 @@ def run_rscript(visualization: Visualization, inputs: Optional[dict] = None) -> 
         name=visualization.name, # type: ignore
         prediction=visualization.prediction, # type: ignore
         values= parsed_values,
-        chartType=visualization.chart_type, # type: ignore
+        chart_type=visualization.chart_type, # type: ignore
         )
     return dto
 
@@ -161,7 +161,7 @@ def get_values_from_output(output: str) -> list[chartEntry]:
 
 def get_visualization_max_timespan(id: int, db: SQLAlchemy):
     visual = db.session.get(Visualization, id, options=[
-        db.joinedload(Visualization.r_script_files).joinedload(RScriptFile.file)
+        db.joinedload(Visualization.r_script_files)
     ])
     # TODO
 

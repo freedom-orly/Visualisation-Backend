@@ -19,7 +19,7 @@ class chartEntry:
 class ChartDTO:
     visualization_id: int
     name: str
-    chartType: Optional[str]
+    chart_type: Optional[str]
     # start_date: datetime
     # end_date: datetime
     prediction: bool

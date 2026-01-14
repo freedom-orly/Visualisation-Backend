@@ -135,10 +135,10 @@ def get_visualization_input_fields(id: int):
     return jsonify(VisualizationHandler.get_visualization_input_fields(db=db, id=id)) # type: ignore
 
 @cross_origin()
-@app.route("/api/files/exists", methods=["GET"])
+@app.route("/api/dashboard-files/exists", methods=["GET"])
 def check_data_files_exists():
     exists = UploadHandler.check_data_files_exists(db=db)
-    return jsonify(exists)
+    return jsonify({"exists": exists})
 
 
 #   getRecentStoreRevenueChart(): Observable<ChartDTO> {

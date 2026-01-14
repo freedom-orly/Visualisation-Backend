@@ -222,20 +222,26 @@ def get_last_files_updates(v: int, db: SQLAlchemy) -> List[FileUpdate]: # type: 
     ]
     
 def delete_file(file_id: int, db: SQLAlchemy):
-    file = db.session.get(File, file_id)
-    if not file:
+    target = db.session.get(RScriptFile, file_id) or db.session.get(DataFile, file_id)
+    if not target:
         return jsonify({"status": "rejected", "errors": [f"File not found"]}), 404
     try:
-        db.session.delete(file)
-        Path(file.file_path).unlink(missing_ok=True) # type: ignore
-        
+        Path(target.file_path).unlink(missing_ok=True) # type: ignore
+        db.session.delete(target)
         db.session.commit()
     except Exception as e:
+        db.session.rollback()
         return jsonify({"status": "rejected", "errors": [f"Failed to delete file: {str(e)}"]}), 500
     return jsonify({"status": "ok", "message": "File deleted successfully"}), 200
 
 def check_data_files_exists(db: SQLAlchemy):
-    count = db.session.query(DataFile).count()
-    if count > 0:
+    sales = db.session.query(Visualization).filter_by(name="Sales Data History").first()
+    countSales = db.session.query(DataFile).filter_by(visualization_id=sales.id).count() # type: ignore
+    
+    weather = db.session.query(Visualization).filter_by(name="Weather History").first()
+    countWeather = db.session.query(DataFile).filter_by(visualization_id=weather.id).count() # type: ignore
+    
+    
+    if countSales + countWeather > 0:
         return True
     return False

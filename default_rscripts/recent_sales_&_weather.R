@@ -27,6 +27,7 @@ for (p in packages) {
 
 parameters_json_str <- args[2]
 parameters <- fromJSON(parameters_json_str)
+stores <- c(as.integer(parameters$stores))
 
 vis_id <- args[1]
 
@@ -35,8 +36,6 @@ data_dir <- file.path(getwd(),"instance", "store",vis_id,"data")
 sales_data <- read_csv2(file.path(data_dir,"sales.csv"))
 weather_data <- read_xlsx(file.path(data_dir,"weather.xlsx"))
 
-latest_sales <- function() {
-  
   #Clean Data
   sales_cleaned <- sales_data %>%
     mutate(
@@ -48,10 +47,14 @@ latest_sales <- function() {
   #Define Time Window
   latest_date <- max(sales_cleaned$Date, na.rm = TRUE)
   start_date <- latest_date - days(30)
+
+latest_sales <- function() {
+  
   
   #Calculate Daily Totals 
   daily_sales <- sales_cleaned %>%
     filter(Date >= start_date) %>%
+    filter(StoreId %in% stores) %>%
     group_by(StoreId, Date) %>%
     summarise(DailyTotal = sum(NetAmountExcl), .groups = "drop")
   
@@ -78,8 +81,6 @@ get_weather_data <- function(){
       Date = floor_date(Time, "day")
     )
   
-  latest_date <- max(weather_data$Time, na.rm = TRUE)
-  start_date <- latest_date - days(6)
   
   filtered_data <- weather_cleaned %>%
     filter(Date >= start_date) %>%

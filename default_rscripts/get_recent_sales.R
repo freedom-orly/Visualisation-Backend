@@ -26,6 +26,7 @@ for (p in packages) {
 
 parameters_json_str <- args[2]
 parameters <- fromJSON(parameters_json_str)
+stores <- c(as.integer(parameters$stores))
 
 vis_id <- args[1]
 
@@ -51,6 +52,7 @@ latest_sales <- function() {
   #Calculate Daily Totals 
   daily_sales <- sales_cleaned %>%
     filter(Date >= start_date) %>%
+    filter(StoreId %in% stores) %>%
     group_by(StoreId, Date) %>%
     summarise(DailyTotal = sum(NetAmountExcl), .groups = "drop")
 

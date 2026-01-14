@@ -24,7 +24,7 @@ source(file.path(getwd(),"instance", "store",vis_id,"rscripts", "forecast_prep.R
 parameters_json_str <- args[2]
 parameters <- fromJSON(parameters_json_str)
 stores <- c(as.integer(parameters$stores))
-horizon_days <- as.integer(parameters$horizon_days)
+horizon_days <- as.integer(parameters$forecast_horizon_days)
 
 
 packages <- c(

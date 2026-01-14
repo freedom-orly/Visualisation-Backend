@@ -1,4 +1,5 @@
-from ast import List
+#from ast import List\
+from typing import List
 import io
 from flask import Response, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy

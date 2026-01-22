@@ -183,6 +183,7 @@ loss_rate <- parameters$loss_rate
 #stores_to_close_list <- c(as.integer(parameters$stores_to_close)) old
 
 input_names <- parameters$stores_to_close
+input_names <- trimws(input_names)
 #Get ids by name provide
 stores_to_close_ids <- as.integer(name_to_id[input_names])
 #filter out NAs incase id was not found

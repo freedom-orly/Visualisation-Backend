@@ -57,8 +57,8 @@ def db_models_init(db: SQLAlchemy):
             field_type="selectMulti",
             required=False,
             field_label="Stores to Close",
-            options="101, 102, 108, 110, 111, 116, 120, 129, 131, 135, 138, 140, 145, 149, 156, 164",
-            default_value="[131, 135]",
+            options="RIMBULA RESTAURANT, MAHADA FOOD EN DRINKS, MOMMA'S RESTAURANT, KILIMA FOOD EN DRINKS, CHIPTWISTER MOBILE, ZEMBLA FOOD&DRINKS, ANIMAZIA RESTAURANT, TRAVELERS TASTE, DE EXPEDITIE, TOKO TOKEH, ASANTE GIFTS, GOUDKOORTS, STROOPWAFEL MOBILE, LORI'S, DUALA FOOD & DRINKS, MAJAKA",            #"101=RIMBULA RESTAURANT, 102=MAHADA FOOD EN DRINKS, 108=MOMMA'S RESTAURANT, 110=KILIMA FOOD EN DRINKS, 111=CHIPTWISTER, 116=ZEMBLA FOOD&DRINKS, 120=ANIMAZIA RESTAURANT, 129=TRAVELERS TASTE, 131=DE EXPEDITIE, 135=TOKO TOKEH, 138=ASANTE GIFTS, 140=GOUDKOORTS, 145=STROOPWAFEL, 149=LORI'S, 156=DUALA FOOD & DRINKS, 164=MAJAKA",
+            default_value="[RIMBULA RESTAURANT, MOMMA'S RESTAURANT]",
         ),
         VisualizationInputField(
             visualization_id=db.session.query(Visualization).filter_by(name="Sales Forecasting").first().id, # type: ignore

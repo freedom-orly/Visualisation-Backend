@@ -42,6 +42,12 @@ store_distribution <- read_csv2(file.path(data_dir,"store_distribution_percentag
 sales_attractiveness <- read_csv2(file.path(data_dir,"sales_attractiveness.csv"))
 distance_df <- read.csv(file.path(data_dir,"completed_friction_matrix2.csv"), check.names = FALSE)
 
+store_mapping_df <- read_csv2(file.path(data_dir, "store.csv"))
+
+#Lookup vectors: Name -> ID and ID -> Name
+name_to_id <- setNames(store_mapping_df$StoreId, store_mapping_df$Store)
+id_to_name <- setNames(store_mapping_df$Store, store_mapping_df$StoreId)
+
 #take first colum values to label the rows
 rownames(distance_df) <- as.character(distance_df$Origin)
 #cleans df so just numbers
@@ -173,7 +179,15 @@ calc_simularity <- function(openStore, closedStore){
 
 #RUN
 loss_rate <- parameters$loss_rate
-stores_to_close_list <- c(as.integer(parameters$stores_to_close))
+
+#stores_to_close_list <- c(as.integer(parameters$stores_to_close)) old
+
+input_names <- parameters$stores_to_close
+#Get ids by name provide
+stores_to_close_ids <- as.integer(name_to_id[input_names])
+#filter out NAs incase id was not found
+stores_to_close_list <- stores_to_close_ids[!is.na(stores_to_close_ids)]
+
 new_results <- simulation_engin(stores_list, stores_to_close_list, loss_rate)
 #View(new_results)
 
@@ -183,12 +197,26 @@ for (s in unique(new_results$Source_Store)) {
 
   d <- new_results[new_results$Source_Store == s, ]
 
+  #Convert store ids to store name
+  #Source
+  source_name <- id_to_name[as.character(s)]
+  if(is.na(source_name)) source_name <- s # Fallback to ID if name not found
+  #Target
+  # d$Target_Store contains IDs or the string "Walk_Away"
+  target_names <- map_chr(d$Target_Store, function(tid) {
+    if (tid == "Walk_Away") return("Walk_Away")
+    
+    name <- id_to_name[as.character(tid)]
+    if (is.na(name)) return(as.character(tid)) # Fallback
+    return(name)
+  })
+
   formated <- append(
     formated,
     list(
       list(
-        name = paste0("Probability_", s),
-        values = map2(d$Target_Store, d$Probability,
+        name = paste0("Probability_", source_name),
+        values = map2(target_names, d$Probability,
                       ~ list(x = .x, y = .y))
       )
     )
